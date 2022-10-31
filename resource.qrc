@@ -1,0 +1,45 @@
+<RCC>
+    <qresource prefix="/img">
+        <file>PNG-cards-1.3/6_of_clubs.png</file>
+        <file>PNG-cards-1.3/6_of_diamonds.png</file>
+        <file>PNG-cards-1.3/6_of_hearts.png</file>
+        <file>PNG-cards-1.3/6_of_spades.png</file>
+        <file>PNG-cards-1.3/7_of_clubs.png</file>
+        <file>PNG-cards-1.3/7_of_diamonds.png</file>
+        <file>PNG-cards-1.3/7_of_hearts.png</file>
+        <file>PNG-cards-1.3/7_of_spades.png</file>
+        <file>PNG-cards-1.3/8_of_clubs.png</file>
+        <file>PNG-cards-1.3/8_of_diamonds.png</file>
+        <file>PNG-cards-1.3/8_of_hearts.png</file>
+        <file>PNG-cards-1.3/8_of_spades.png</file>
+        <file>PNG-cards-1.3/9_of_clubs.png</file>
+        <file>PNG-cards-1.3/9_of_diamonds.png</file>
+        <file>PNG-cards-1.3/9_of_hearts.png</file>
+        <file>PNG-cards-1.3/9_of_spades.png</file>
+        <file>PNG-cards-1.3/10_of_clubs.png</file>
+        <file>PNG-cards-1.3/10_of_diamonds.png</file>
+        <file>PNG-cards-1.3/10_of_hearts.png</file>
+        <file>PNG-cards-1.3/10_of_spades.png</file>
+        <file>PNG-cards-1.3/ace_of_clubs.png</file>
+        <file>PNG-cards-1.3/ace_of_diamonds.png</file>
+        <file>PNG-cards-1.3/ace_of_hearts.png</file>
+        <file>PNG-cards-1.3/ace_of_spades2.png</file>
+        <file>PNG-cards-1.3/bybna.png</file>
+        <file>PNG-cards-1.3/card_back.jfif</file>
+        <file>PNG-cards-1.3/chirva.png</file>
+        <file>PNG-cards-1.3/jack_of_clubs2.png</file>
+        <file>PNG-cards-1.3/jack_of_diamonds2.png</file>
+        <file>PNG-cards-1.3/jack_of_hearts2.png</file>
+        <file>PNG-cards-1.3/jack_of_spades2.png</file>
+        <file>PNG-cards-1.3/king_of_clubs2.png</file>
+        <file>PNG-cards-1.3/king_of_diamonds2.png</file>
+        <file>PNG-cards-1.3/king_of_hearts2.png</file>
+        <file>PNG-cards-1.3/king_of_spades2.png</file>
+        <file>PNG-cards-1.3/kresti.png</file>
+        <file>PNG-cards-1.3/piki.png</file>
+        <file>PNG-cards-1.3/queen_of_clubs2.png</file>
+        <file>PNG-cards-1.3/queen_of_diamonds2.png</file>
+        <file>PNG-cards-1.3/queen_of_hearts2.png</file>
+        <file>PNG-cards-1.3/queen_of_spades2.png</file>
+    </qresource>
+</RCC>
