@@ -124,7 +124,7 @@ background-color: rgb(163, 3, 47);
      <rect>
       <x>220</x>
       <y>150</y>
-      <width>71</width>
+      <width>81</width>
       <height>101</height>
      </rect>
     </property>
@@ -318,7 +318,85 @@ border-width: 2px;</string>
     </property>
     <property name="text">
      <string>^ 
-Shufling(2x)</string>
+Shuffling(2x)</string>
+    </property>
+    <property name="alignment">
+     <set>Qt::AlignCenter</set>
+    </property>
+   </widget>
+   <widget class="QLabel" name="label_5">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>270</y>
+      <width>81</width>
+      <height>16</height>
+     </rect>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">font-family: &quot;Segoe UI&quot;;
+    font-size: 8pt;
+    border: 1px solid;
+    border-color: rgb(192,192,192); 
+    border-radius: 3px; 
+
+    color: white;
+    font: bold;</string>
+    </property>
+    <property name="text">
+     <string>Points: 0</string>
+    </property>
+    <property name="alignment">
+     <set>Qt::AlignCenter</set>
+    </property>
+   </widget>
+   <widget class="QLabel" name="label_6">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>115</y>
+      <width>81</width>
+      <height>16</height>
+     </rect>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">font-family: &quot;Segoe UI&quot;;
+    font-size: 8pt;
+    border: 1px solid;
+    border-color: rgb(192,192,192); 
+    border-radius: 3px; 
+
+    color: white;
+    font: bold;</string>
+    </property>
+    <property name="text">
+     <string>Points: 0</string>
+    </property>
+    <property name="alignment">
+     <set>Qt::AlignCenter</set>
+    </property>
+   </widget>
+   <widget class="QLabel" name="label_7">
+    <property name="geometry">
+     <rect>
+      <x>500</x>
+      <y>120</y>
+      <width>81</width>
+      <height>16</height>
+     </rect>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">font-family: &quot;Segoe UI&quot;;
+    font-size: 8pt;
+    border: 1px solid;
+    border-color: rgb(192,192,192); 
+    border-radius: 3px; 
+
+    color: white;
+    font: bold;</string>
+    </property>
+    <property name="text">
+     <string>Points 1x</string>
     </property>
     <property name="alignment">
      <set>Qt::AlignCenter</set>
@@ -331,7 +409,7 @@ Shufling(2x)</string>
      <x>0</x>
      <y>0</y>
      <width>678</width>
-     <height>22</height>
+     <height>17</height>
     </rect>
    </property>
    <property name="styleSheet">

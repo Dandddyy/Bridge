@@ -33,6 +33,8 @@ public:
 
     void onRemoveWidgetColod();
 
+    void shuffling();
+
     bool possibleMove(std::string p, std::string t, bool ndmove);
 
     void operation(bool mv);
@@ -86,5 +88,8 @@ private:
     bool secMove;
     std::string Jackchoose;
     bool checkForTake;
+    int playerPoints;
+    int botPoints;
+    int PointsX;
 };
 #endif // MAINWINDOW_H

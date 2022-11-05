@@ -12,6 +12,8 @@ MainWindow::MainWindow(QWidget *parent)
     botCardsSize = 0;
     ColodCardsSize = 0;
     tableCardsSize = 0;
+    playerPoints = 0;
+    botPoints = 0;
 
     ui->label->setVisible(false);
     ui->label_2->setVisible(false);
@@ -23,8 +25,13 @@ MainWindow::MainWindow(QWidget *parent)
     ui->pushButton_5->hide();
     ui->label_3->hide();
     ui->label_4->hide();
+    ui->label_5->hide();
+    ui->label_6->hide();
 
     checkForTake = 0;
+
+    PointsX = 1;
+    ui->label_7->setText(QString::fromStdString("Points " + std::to_string(PointsX) + "x"));
 }
 
 MainWindow::~MainWindow()
@@ -151,6 +158,9 @@ void MainWindow::onRemoveWidgetColod()
 {
     if(move == 0 && checkForTake == 0){
         if(tableCards[tableCardsSize - 1][0] == '6' || secMove == 0){
+            if(ColodCardsSize == 0){
+                shuffling();
+            }
             playerCards[playerCardsSize] = ColodCards[ColodCardsSize - 1];
             onAddWidgetPlayer(playerCards[playerCardsSize], playerCardsSize);
             playerCardsSize++;
@@ -165,12 +175,15 @@ void MainWindow::onRemoveWidgetColod()
             }
             if(ColodCardsSize == 0){
                 onAddWidgetColod(0);
-                ColodCardsSize++;
+                ui->label_4->setText(QString::fromStdString("^ \nShuffling (" + std::to_string(PointsX + 1) + "x)"));
                 ui->label_4->show();
             }
         }
     }
     else if(move == 1 && checkForTake == 1){
+        if(ColodCardsSize == 0){
+            shuffling();
+        }
         botCards[botCardsSize] = ColodCards[ColodCardsSize - 1];
         onAddWidgetBot(botCardsSize);
         botCardsSize++;
@@ -181,10 +194,37 @@ void MainWindow::onRemoveWidgetColod()
         ui->label->setText(QString::fromStdString(kol));
         if(ColodCardsSize == 0){
             onAddWidgetColod(0);
-            ColodCardsSize++;
+            ui->label_4->setText(QString::fromStdString("^ \nShuffling (" + std::to_string(PointsX + 1) + "x)"));
             ui->label_4->show();
         }
     }
+}
+
+void MainWindow::shuffling()
+{
+    delete ColodButtons[0];
+
+    for(int i = 0; i < tableCardsSize - 1; i++){
+        int ran = rand() % tableCardsSize - 1;
+        if(tableCards[ran] == ""){
+            i--;
+        }
+        else{
+            ColodCards[ColodCardsSize] = tableCards[ran];
+            onAddWidgetColod(ColodCardsSize);
+            ColodCardsSize++;
+            tableCards[ran] = "";
+        }
+    }
+    tableCards[0] = tableCards[tableCardsSize - 1];
+    tableCards[tableCardsSize - 1] = "";
+    for(int i = 0; i < tableCardsSize; i++){
+        delete TableButtons[i];
+    }
+    onAddWidgetTable(tableCards[0], 0);
+    tableCardsSize = 1;
+    PointsX++;
+    ui->label_7->setText(QString::fromStdString("Points " + std::to_string(PointsX) + "x"));
 }
 
 bool MainWindow::possibleMove(std::string p, std::string t, bool ndmove)
@@ -232,18 +272,25 @@ void MainWindow::operation(bool mv)
             secMove = 0;
             move = 0;
             ui->label_2->setText("Your turn");
+            ui->pushButton->hide();
         }
         else if(tableCards[tableCardsSize - 1][0] == '8'){
-            if(ColodCardsSize >= 2){
+                if(ColodCardsSize == 0){
+                    shuffling();
+                }
                 secMove = 0;
                 move = 0;
                 ui->label_2->setText("Your turn");
+                ui->pushButton->hide();
                 botCards[botCardsSize] = ColodCards[ColodCardsSize - 1];
                 onAddWidgetBot(botCardsSize);
                 botCardsSize++;
                 ColodCards[ColodCardsSize - 1] = "";
                 delete ColodButtons[ColodCardsSize - 1];
                 ColodCardsSize--;
+                if(ColodCardsSize == 0){
+                    shuffling();
+                }
                 botCards[botCardsSize] = ColodCards[ColodCardsSize - 1];
                 onAddWidgetBot(botCardsSize);
                 botCardsSize++;
@@ -254,16 +301,14 @@ void MainWindow::operation(bool mv)
                 ui->label->setText(QString::fromStdString(kol));
                 if(ColodCardsSize == 0){
                     onAddWidgetColod(0);
-                    ColodCardsSize++;
+                    ui->label_4->setText(QString::fromStdString("^ \nShuffling (" + std::to_string(PointsX + 1) + "x)"));
                     ui->label_4->show();
                 }
-            }
-            else{
-
-            }
         }
         else if(tableCards[tableCardsSize - 1][0] == '7'){
-            if(ColodCardsSize >= 1){
+                if(ColodCardsSize == 0){
+                    shuffling();
+                }
                 botCards[botCardsSize] = ColodCards[ColodCardsSize - 1];
                 onAddWidgetBot(botCardsSize);
                 botCardsSize++;
@@ -274,13 +319,9 @@ void MainWindow::operation(bool mv)
                 ui->label->setText(QString::fromStdString(kol));
                 if(ColodCardsSize == 0){
                     onAddWidgetColod(0);
-                    ColodCardsSize++;
+                    ui->label_4->setText(QString::fromStdString("^ \nShuffling (" + std::to_string(PointsX + 1) + "x)"));
                     ui->label_4->show();
                 }
-            }
-            else{
-
-            }
         }
     }
     else{
@@ -290,7 +331,9 @@ void MainWindow::operation(bool mv)
             ui->label_2->setText("Enemy turn");
         }
         else if(tableCards[tableCardsSize - 1][0] == '8'){
-            if(ColodCardsSize >= 2){
+                if(ColodCardsSize == 0){
+                    shuffling();
+                }
                 secMove = 0;
                 move = 1;
                 ui->label_2->setText("Enemy turn");
@@ -300,6 +343,9 @@ void MainWindow::operation(bool mv)
                 ColodCards[ColodCardsSize - 1] = "";
                 delete ColodButtons[ColodCardsSize - 1];
                 ColodCardsSize--;
+                if(ColodCardsSize == 0){
+                    shuffling();
+                }
                 playerCards[playerCardsSize] = ColodCards[ColodCardsSize - 1];
                 onAddWidgetPlayer(playerCards[playerCardsSize], playerCardsSize);
                 playerCardsSize++;
@@ -310,16 +356,14 @@ void MainWindow::operation(bool mv)
                 ui->label->setText(QString::fromStdString(kol));
                 if(ColodCardsSize == 0){
                     onAddWidgetColod(0);
-                    ColodCardsSize++;
+                    ui->label_4->setText(QString::fromStdString("^ \nShuffling (" + std::to_string(PointsX + 1) + "x)"));
                     ui->label_4->show();
                 }
-            }
-            else{
-
-            }
         }
         else if(tableCards[tableCardsSize - 1][0] == '7'){
-            if(ColodCardsSize >= 1){
+                if(ColodCardsSize == 0){
+                    shuffling();
+                }
                 playerCards[playerCardsSize] = ColodCards[ColodCardsSize - 1];
                 onAddWidgetPlayer(playerCards[playerCardsSize], playerCardsSize);
                 playerCardsSize++;
@@ -330,13 +374,9 @@ void MainWindow::operation(bool mv)
                 ui->label->setText(QString::fromStdString(kol));
                 if(ColodCardsSize == 0){
                     onAddWidgetColod(0);
-                    ColodCardsSize++;
+                    ui->label_4->setText(QString::fromStdString("^ \nShuffling (" + std::to_string(PointsX + 1) + "x)"));
                     ui->label_4->show();
                 }
-            }
-            else{
-
-            }
         }
     }
 }
@@ -478,6 +518,8 @@ void MainWindow::Start()
         ui->label->setText(QString::fromStdString(kol));
 
         onAddWidgetColod(i);
+
+        check = false;
     }
 }
 
@@ -486,6 +528,8 @@ void MainWindow::on_actionStart_the_game_triggered()
 {
     ui->label->setVisible(true);
     ui->label_2->setVisible(true);
+    ui->label_5->setVisible(true);
+    ui->label_6->setVisible(true);
 
     playerCardsSize = 0;
     botCardsSize = 0;
