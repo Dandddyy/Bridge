@@ -27,6 +27,7 @@ MainWindow::MainWindow(QWidget *parent)
     ui->label_4->hide();
     ui->label_5->hide();
     ui->label_6->hide();
+    ui->label_7->hide();
 
     checkForTake = 0;
 
@@ -530,6 +531,7 @@ void MainWindow::on_actionStart_the_game_triggered()
     ui->label_2->setVisible(true);
     ui->label_5->setVisible(true);
     ui->label_6->setVisible(true);
+    ui->label_7->setVisible(true);
 
     playerCardsSize = 0;
     botCardsSize = 0;
