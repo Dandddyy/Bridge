@@ -35,6 +35,8 @@ public:
 
     void shuffling();
 
+    void gameEnd();
+
     bool possibleMove(std::string p, std::string t, bool ndmove);
 
     void operation(bool mv);
@@ -91,5 +93,7 @@ private:
     int playerPoints;
     int botPoints;
     int PointsX;
+    int pJackKol;
+    int bJackKol;
 };
 #endif // MAINWINDOW_H

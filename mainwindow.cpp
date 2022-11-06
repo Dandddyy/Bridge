@@ -33,6 +33,9 @@ MainWindow::MainWindow(QWidget *parent)
 
     PointsX = 1;
     ui->label_7->setText(QString::fromStdString("Points " + std::to_string(PointsX) + "x"));
+
+    pJackKol = 0;
+    bJackKol = 0;
 }
 
 MainWindow::~MainWindow()
@@ -132,6 +135,12 @@ void MainWindow::onRemoveWidgetPlayer()
             ui->pushButton_4->hide();
             ui->pushButton_5->hide();
             ui->label_3->hide();
+            if(playerCards[i][0] == 'J'){
+                pJackKol++;
+            }
+            else{
+                pJackKol = 0;
+            }
             tableCards[tableCardsSize] = playerCards[i];
             onAddWidgetTable(tableCards[tableCardsSize], tableCardsSize);
             tableCardsSize++;
@@ -152,6 +161,7 @@ void MainWindow::onRemoveWidgetPlayer()
         secondmove();
         operation(mv);
         checkForTake = 0;
+        gameEnd();
     }
 }
 
@@ -226,6 +236,115 @@ void MainWindow::shuffling()
     tableCardsSize = 1;
     PointsX++;
     ui->label_7->setText(QString::fromStdString("Points " + std::to_string(PointsX) + "x"));
+}
+
+void MainWindow::gameEnd()
+{
+    if(playerCardsSize == 0 || botCardsSize == 0){
+        if(playerCardsSize == 0){
+            if(pJackKol != 0){
+                playerPoints -= ((20 * pJackKol) * PointsX);
+            }
+            for(int i = 0; i < botCardsSize; i++){
+                if(botCards[i][0] == 'A'){
+                    botPoints += (15 * PointsX);
+                }
+                else if(botCards[i][0] == 'J'){
+                    botPoints += (20 * PointsX);
+                }
+                else if(botCards[i][0] == 'K' || botCards[i][0] == 'Q' || botCards[i][0] == '1'){
+                    botPoints += (10 * PointsX);
+                }
+            }
+        }
+        else if(botCardsSize == 0){
+            if(bJackKol != 0){
+                botPoints -= ((20 * bJackKol) * PointsX);
+            }
+            for(int i = 0; i < playerCardsSize; i++){
+                if(playerCards[i][0] == 'A'){
+                    playerPoints += (15 * PointsX);
+                }
+                else if(playerCards[i][0] == 'J'){
+                    playerPoints += (20 * PointsX);
+                }
+                else if(playerCards[i][0] == 'K' || playerCards[i][0] == 'Q' || playerCards[i][0] == '1'){
+                    playerPoints += (10 * PointsX);
+                }
+            }
+        }
+
+        if(botPoints == 125){
+            botPoints = 0;
+        }
+        else if(playerPoints == 125){
+            playerPoints = 0;
+        }
+        for(int i = 0; i < botCardsSize; i++){
+            delete botButtons[i];
+            botCards[i] = "";
+        }
+        for(int i = 0; i < playerCardsSize; i++){
+            delete playerButtons[i];
+            playerCards[i] = "";
+        }
+        for(int i = 0; i < ColodCardsSize; i++){
+            delete ColodButtons[i];
+            ColodCards[i] = "";
+        }
+        for(int i = 0; i < tableCardsSize; i++){
+            delete TableButtons[i];
+            tableCards[i] = "";
+        }
+        botCardsSize = 0;
+        playerCardsSize = 0;
+        ColodCardsSize = 0;
+        tableCardsSize = 0;
+
+        checkForTake = 0;
+
+        PointsX = 1;
+        ui->label->setVisible(false);
+        ui->label_2->setVisible(false);
+
+        ui->pushButton->hide();
+        ui->pushButton_2->hide();
+        ui->pushButton_3->hide();
+        ui->pushButton_4->hide();
+        ui->pushButton_5->hide();
+        ui->label_3->hide();
+        ui->label_4->hide();
+        ui->label_5->hide();
+        ui->label_6->hide();
+        ui->label_7->hide();
+        ui->label_7->setText(QString::fromStdString("Points " + std::to_string(PointsX) + "x"));
+
+        pJackKol = 0;
+        bJackKol = 0;
+
+        if(playerPoints > 125){
+            QMessageBox::about(this, "Game over", QString::fromStdString("Unfortunately. You lost!\nComputer points: " + std::to_string(botPoints) + "\nYour points: " + std::to_string(playerPoints)));
+            botPoints = 0;
+            playerPoints = 0;
+        }
+        else if(botPoints > 125){
+            QMessageBox::about(this, "Game over", QString::fromStdString("Congratulations! You won!!\nComputer points: " + std::to_string(botPoints) + "\nYour points: " + std::to_string(playerPoints)));
+            botPoints = 0;
+            playerPoints = 0;
+        }
+        else{
+            ui->label->setVisible(true);
+            ui->label_2->setVisible(true);
+            ui->label_5->setVisible(true);
+            ui->label_6->setVisible(true);
+            ui->label_7->setVisible(true);
+
+            Start();
+            bool mv = move;
+            secondmove();
+            operation(mv);
+        }
+    }
 }
 
 bool MainWindow::possibleMove(std::string p, std::string t, bool ndmove)
@@ -532,11 +651,6 @@ void MainWindow::on_actionStart_the_game_triggered()
     ui->label_5->setVisible(true);
     ui->label_6->setVisible(true);
     ui->label_7->setVisible(true);
-
-    playerCardsSize = 0;
-    botCardsSize = 0;
-    ColodCardsSize = 0;
-    tableCardsSize = 0;
 
     Start();
     bool mv = move;
