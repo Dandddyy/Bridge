@@ -30,6 +30,7 @@ MainWindow::MainWindow(QWidget *parent)
     ui->label_7->hide();
 
     checkForTake = 0;
+    BcheckForTake = 0;
 
     PointsX = 1;
     ui->label_7->setText(QString::fromStdString("Points " + std::to_string(PointsX) + "x"));
@@ -41,6 +42,271 @@ MainWindow::MainWindow(QWidget *parent)
 MainWindow::~MainWindow()
 {
     delete ui;
+}
+
+void MainWindow::botMove()
+{
+    if(move == 1){
+        bool possibleMovement = true;
+        bool mv;
+        char JJ;
+        int finalmove[8];
+        int finalmoveSize = 0;
+        int checkWith[9];
+        if(Jackchoose == ""){
+            JJ = tableCards[tableCardsSize - 1][1];
+        }
+        else{
+            JJ = Jackchoose[0];
+        }
+        Jackchoose = "";
+        for(int i = 0; i < 9; i++){
+            checkWith[i] = botCardsSize;
+        }
+        if(secMove == 0 && botCardsSize > 0){
+            for(int i = 0; i < botCardsSize; i++){
+
+                if(botCards[i][1] == JJ && botCards[i][0] == '6'){
+                    checkWith[0] = i;
+                }
+                if(botCards[i][1] == JJ && botCards[i][0] == '7'){
+                    checkWith[1] = i;
+                }
+                if(botCards[i][1] == JJ && botCards[i][0] == '8'){
+                    checkWith[2] = i;
+                }
+                if(botCards[i][1] == JJ && botCards[i][0] == '9'){
+                    checkWith[3] = i;
+                }
+                if(botCards[i][1] == JJ && botCards[i][0] == '1'){
+                    checkWith[4] = i;
+                }
+                if(botCards[i][0] == 'J'){
+                    checkWith[5] = i;
+                }
+                if(botCards[i][1] == JJ && botCards[i][0] == 'Q'){
+                    checkWith[6] = i;
+                }
+                if(botCards[i][1] == JJ && botCards[i][0] == 'K'){
+                    checkWith[7] = i;
+                }
+                if(botCards[i][1] == JJ && botCards[i][0] == 'A'){
+                    checkWith[8] = i;
+                }
+            }
+            if(checkWith[0] < botCardsSize && checkWith[8] < botCardsSize){
+                finalmove[0] = checkWith[0];
+                finalmove[1] = checkWith[8];
+                finalmoveSize += 2;
+            }
+            else if(checkWith[8] < botCardsSize){
+                finalmove[0] = checkWith[8];
+                finalmoveSize++;
+            }
+            else if(checkWith[0] < botCardsSize && checkWith[2] < botCardsSize){
+                finalmove[0] = checkWith[0];
+                finalmove[1] = checkWith[2];
+                finalmoveSize += 2;
+            }
+            else if(checkWith[2] < botCardsSize){
+                finalmove[0] = checkWith[2];
+                finalmoveSize++;
+            }
+            else if(checkWith[0] < botCardsSize && checkWith[7] < botCardsSize){
+                finalmove[0] = checkWith[0];
+                finalmove[1] = checkWith[7];
+                finalmoveSize += 2;
+            }
+            else if(checkWith[0] < botCardsSize && checkWith[6] < botCardsSize){
+                finalmove[0] = checkWith[0];
+                finalmove[1] = checkWith[6];
+                finalmoveSize += 2;
+            }
+            else if(checkWith[0] < botCardsSize && checkWith[4] < botCardsSize){
+                finalmove[0] = checkWith[0];
+                finalmove[1] = checkWith[4];
+                finalmoveSize += 2;
+            }
+            else if(checkWith[7] < botCardsSize){
+                finalmove[0] = checkWith[7];
+                finalmoveSize++;
+            }
+            else if(checkWith[6] < botCardsSize){
+                finalmove[0] = checkWith[6];
+                finalmoveSize++;
+            }
+            else if(checkWith[4] < botCardsSize){
+                finalmove[0] = checkWith[4];
+                finalmoveSize++;
+            }
+            else if(checkWith[0] < botCardsSize && checkWith[1] < botCardsSize){
+                finalmove[0] = checkWith[0];
+                finalmove[1] = checkWith[1];
+                finalmoveSize += 2;
+            }
+            else if(checkWith[1] < botCardsSize){
+                finalmove[0] = checkWith[1];
+                finalmoveSize++;
+            }
+            else if(checkWith[0] < botCardsSize && checkWith[3] < botCardsSize){
+                finalmove[0] = checkWith[0];
+                finalmove[1] = checkWith[3];
+                finalmoveSize += 2;
+            }
+            else if(checkWith[3] < botCardsSize){
+                finalmove[0] = checkWith[3];
+                finalmoveSize++;
+            }
+            else if(checkWith[5] < botCardsSize){
+                int sign[4];
+                sign[0] = 0;
+                sign[1] = 0;
+                sign[2] = 0;
+                sign[3] = 0;
+                finalmove[0] = checkWith[5];
+                finalmoveSize++;
+                for(int i = 0; i < botCardsSize; i++){
+                    if(botCards[i][1] == 'c'){
+                        sign[0]++;
+                    }
+                    else if(botCards[i][1] == 'k'){
+                        sign[1]++;
+                    }
+                    else if(botCards[i][1] == 'b'){
+                        sign[2]++;
+                    }
+                    else if(botCards[i][1] == 'p'){
+                        sign[3]++;
+                    }
+                }
+                int k = 0;
+                for(int i = 0; i < 4; i++){
+                    if(sign[k] < sign[i]){
+                        k = i;
+                    }
+                }
+                if(k == 0){
+                    Jackchoose = "c";
+                    ui->label_3->setStyleSheet("border-image: url(:/img/PNG-cards-1.3/chirva.png);");
+                    ui->label_3->show();
+                }
+                else if(k == 1){
+                    Jackchoose = "k";
+                    ui->label_3->setStyleSheet("border-image: url(:/img/PNG-cards-1.3/kresti.png);");
+                    ui->label_3->show();
+                }
+                else if(k == 2){
+                    Jackchoose = "b";
+                    ui->label_3->setStyleSheet("border-image: url(:/img/PNG-cards-1.3/bybna.png);");
+                    ui->label_3->show();
+                }
+                else if(k == 3){
+                    Jackchoose = "p";
+                    ui->label_3->setStyleSheet("border-image: url(:/img/PNG-cards-1.3/piki.png);");
+                    ui->label_3->show();
+                }
+            }
+            else if(checkWith[0] < botCardsSize){
+                finalmove[0] = checkWith[0];
+                finalmoveSize++;
+            }
+            else if(BcheckForTake == 0){
+                onRemoveWidgetColod();
+                possibleMovement = false;
+                botMove();
+            }
+            else{
+                secMove = 0;
+                move = 0;
+                ui->label_2->setText("Your turn");
+                possibleMovement = false;
+                checkForTake = 0;
+            }
+        }
+        else if(secMove == 1 && botCardsSize > 0){
+            for(int i = 0; i < botCardsSize; i++){
+                if(botCards[i][0] == tableCards[tableCardsSize - 1][0]){
+                    finalmove[0] = i;
+                    finalmoveSize++;
+                    if(botCards[i][0] == 'J'){
+                        int sign[4];
+                        sign[0] = 0;
+                        sign[1] = 0;
+                        sign[2] = 0;
+                        sign[3] = 0;
+                        for(int i = 0; i < botCardsSize; i++){
+                            if(botCards[i][1] == 'c'){
+                                sign[0]++;
+                            }
+                            else if(botCards[i][1] == 'k'){
+                                sign[1]++;
+                            }
+                            else if(botCards[i][1] == 'b'){
+                                sign[2]++;
+                            }
+                            else if(botCards[i][1] == 'p'){
+                                sign[3]++;
+                            }
+                        }
+                        int k = 0;
+                        for(int i = 0; i < 4; i++){
+                            if(sign[k] < sign[i]){
+                                k = i;
+                            }
+                        }
+                        if(k == 0){
+                            Jackchoose = "c";
+                            ui->label_3->setStyleSheet("border-image: url(:/img/PNG-cards-1.3/chirva.png);");
+                            ui->label_3->show();
+                        }
+                        else if(k == 1){
+                            Jackchoose = "k";
+                            ui->label_3->setStyleSheet("border-image: url(:/img/PNG-cards-1.3/kresti.png);");
+                            ui->label_3->show();
+                        }
+                        else if(k == 2){
+                            Jackchoose = "b";
+                            ui->label_3->setStyleSheet("border-image: url(:/img/PNG-cards-1.3/bybna.png);");
+                            ui->label_3->show();
+                        }
+                        else if(k == 3){
+                            Jackchoose = "p";
+                            ui->label_3->setStyleSheet("border-image: url(:/img/PNG-cards-1.3/piki.png);");
+                            ui->label_3->show();
+                        }
+                    }
+
+                }
+            }
+        }
+        if(possibleMovement == true){
+            if(botCards[finalmove[finalmoveSize - 1]][0] == 'J'){
+                bJackKol++;
+            }
+            else{
+                bJackKol = 0;
+            }
+            for(int i = 0; i < finalmoveSize; i++){
+                tableCards[tableCardsSize] = botCards[finalmove[i]];
+                onAddWidgetTable(tableCards[tableCardsSize], tableCardsSize);
+                tableCardsSize++;
+                delete botButtons[finalmove[i]];
+                botCards[finalmove[i]] = "";
+                for(int j = finalmove[i]; j < botCardsSize - 1; j++){
+                    onAddWidgetBot(j);
+                    delete botButtons[j + 1];
+                    botCards[j] = botCards[j + 1];
+                    botCards[j + 1] = "";
+                }
+                botCardsSize--;
+            }
+            gameEnd();
+            mv = move;
+            secondmove();
+            operation(mv);
+        }
+        //gameEnd();
+    }
 }
 
 void MainWindow::onAddWidgetPlayer(std::string card, int iter)
@@ -158,10 +424,13 @@ void MainWindow::onRemoveWidgetPlayer()
         }
     }
     if(maincheck == true){
+        ui->label_3->hide();
         secondmove();
         operation(mv);
         checkForTake = 0;
+        BcheckForTake = 0;
         gameEnd();
+        botMove();
     }
 }
 
@@ -191,22 +460,27 @@ void MainWindow::onRemoveWidgetColod()
             }
         }
     }
-    else if(move == 1 && checkForTake == 1){
-        if(ColodCardsSize == 0){
-            shuffling();
-        }
-        botCards[botCardsSize] = ColodCards[ColodCardsSize - 1];
-        onAddWidgetBot(botCardsSize);
-        botCardsSize++;
-        ColodCards[ColodCardsSize - 1] = "";
-        delete ColodButtons[ColodCardsSize - 1];
-        ColodCardsSize--;
-        std::string kol = std::to_string(ColodCardsSize);
-        ui->label->setText(QString::fromStdString(kol));
-        if(ColodCardsSize == 0){
-            onAddWidgetColod(0);
-            ui->label_4->setText(QString::fromStdString("^ \nShuffling (" + std::to_string(PointsX + 1) + "x)"));
-            ui->label_4->show();
+    else if(move == 1 && BcheckForTake == 0){
+        if(tableCards[tableCardsSize - 1][0] == '6' || secMove == 0){
+            if(ColodCardsSize == 0){
+                shuffling();
+            }
+            botCards[botCardsSize] = ColodCards[ColodCardsSize - 1];
+            onAddWidgetBot(botCardsSize);
+            botCardsSize++;
+            ColodCards[ColodCardsSize - 1] = "";
+            delete ColodButtons[ColodCardsSize - 1];
+            ColodCardsSize--;
+            std::string kol = std::to_string(ColodCardsSize);
+            ui->label->setText(QString::fromStdString(kol));
+            if(tableCards[tableCardsSize - 1][0] != '6'){
+                BcheckForTake = 1;
+            }
+            if(ColodCardsSize == 0){
+                onAddWidgetColod(0);
+                ui->label_4->setText(QString::fromStdString("^ \nShuffling (" + std::to_string(PointsX + 1) + "x)"));
+                ui->label_4->show();
+            }
         }
     }
 }
@@ -302,6 +576,7 @@ void MainWindow::gameEnd()
         tableCardsSize = 0;
 
         checkForTake = 0;
+        BcheckForTake = 0;
 
         PointsX = 1;
         ui->label->setVisible(false);
@@ -449,6 +724,7 @@ void MainWindow::operation(bool mv)
             secMove = 0;
             move = 1;
             ui->label_2->setText("Enemy turn");
+            botMove();
         }
         else if(tableCards[tableCardsSize - 1][0] == '8'){
                 if(ColodCardsSize == 0){
@@ -479,6 +755,7 @@ void MainWindow::operation(bool mv)
                     ui->label_4->setText(QString::fromStdString("^ \nShuffling (" + std::to_string(PointsX + 1) + "x)"));
                     ui->label_4->show();
                 }
+                botMove();
         }
         else if(tableCards[tableCardsSize - 1][0] == '7'){
                 if(ColodCardsSize == 0){
@@ -533,6 +810,7 @@ void MainWindow::secondmove()
                 secMove = 1;
                 move = 1;
                 ui->label_2->setText("Enemy turn");
+                botMove();
             }
         }
     }
@@ -656,6 +934,9 @@ void MainWindow::on_actionStart_the_game_triggered()
     bool mv = move;
     secondmove();
     operation(mv);
+    if(move == 1){
+        botMove();
+    }
 }
 
 
@@ -672,8 +953,10 @@ void MainWindow::on_pushButton_clicked()
 {
     move = 1;
     checkForTake = 0;
+    BcheckForTake = 0;
     ui->label_2->setText("Enemy turn");
     ui->pushButton->hide();
+    botMove();
 }
 
 
@@ -689,6 +972,7 @@ void MainWindow::on_pushButton_2_clicked()
     secMove = 0;
     ui->label_3->setStyleSheet("border-image: url(:/img/PNG-cards-1.3/chirva.png);");
     ui->label_3->show();
+    botMove();
 }
 
 
@@ -704,6 +988,7 @@ void MainWindow::on_pushButton_3_clicked()
     secMove = 0;
     ui->label_3->setStyleSheet("border-image: url(:/img/PNG-cards-1.3/kresti.png);");
     ui->label_3->show();
+    botMove();
 }
 
 
@@ -719,6 +1004,7 @@ void MainWindow::on_pushButton_4_clicked()
     secMove = 0;
     ui->label_3->setStyleSheet("border-image: url(:/img/PNG-cards-1.3/bybna.png);");
     ui->label_3->show();
+    botMove();
 }
 
 
@@ -734,5 +1020,6 @@ void MainWindow::on_pushButton_5_clicked()
     secMove = 0;
     ui->label_3->setStyleSheet("border-image: url(:/img/PNG-cards-1.3/piki.png);");
     ui->label_3->show();
+    botMove();
 }
 

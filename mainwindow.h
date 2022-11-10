@@ -5,7 +5,7 @@
 #include <QPushButton>
 #include <cstdlib>
 #include <ctime>
-#include<Windows.h>
+#include <Windows.h>
 #include <QSignalMapper>
 
 
@@ -20,6 +20,8 @@ class MainWindow : public QMainWindow
 public:
     MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
+
+    void botMove();
 
     void onAddWidgetPlayer(std::string card, int iter);
 
@@ -90,6 +92,7 @@ private:
     bool secMove;
     std::string Jackchoose;
     bool checkForTake;
+    bool BcheckForTake;
     int playerPoints;
     int botPoints;
     int PointsX;
