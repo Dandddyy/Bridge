@@ -7,6 +7,7 @@
 #include <ctime>
 #include <Windows.h>
 #include <QSignalMapper>
+#include <QTimer>
 
 
 QT_BEGIN_NAMESPACE
@@ -20,8 +21,6 @@ class MainWindow : public QMainWindow
 public:
     MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
-
-    void botMove();
 
     void onAddWidgetPlayer(std::string card, int iter);
 
@@ -48,6 +47,9 @@ public:
     void Start();
 
 private slots:
+
+    void botMove();
+
     void on_actionStart_the_game_triggered();
 
     void on_actionQuit_2_triggered();
@@ -98,5 +100,6 @@ private:
     int PointsX;
     int pJackKol;
     int bJackKol;
+    QTimer *timer;
 };
 #endif // MAINWINDOW_H
