@@ -101,5 +101,6 @@ private:
     int pJackKol;
     int bJackKol;
     QTimer *timer;
+    int Set;
 };
 #endif // MAINWINDOW_H

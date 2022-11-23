@@ -14,6 +14,7 @@ MainWindow::MainWindow(QWidget *parent)
     tableCardsSize = 0;
     playerPoints = 0;
     botPoints = 0;
+    Set = 1;
 
     ui->label->setVisible(false);
     ui->label_2->setVisible(false);
@@ -28,6 +29,7 @@ MainWindow::MainWindow(QWidget *parent)
     ui->label_5->hide();
     ui->label_6->hide();
     ui->label_7->hide();
+    ui->label_8->hide();
 
     checkForTake = 0;
     BcheckForTake = 0;
@@ -53,9 +55,10 @@ void MainWindow::botMove()
     if(move == 1){
         bool mv;
         char JJ;
-        int finalmove[8];
+        int finalmove[9];
         int finalmoveSize = 0;
         int checkWith[9];
+        int checkWithSame[9];
         if(Jackchoose == ""){
             JJ = tableCards[tableCardsSize - 1][1];
         }
@@ -64,24 +67,41 @@ void MainWindow::botMove()
         }
         for(int i = 0; i < 9; i++){
             checkWith[i] = botCardsSize;
+            checkWithSame[i] = botCardsSize;
+            finalmove[i] = botCardsSize;
         }
-        if(secMove == 0 && botCardsSize > 0){
+        if(secMove == 0){
             for(int i = 0; i < botCardsSize; i++){
 
                 if(botCards[i][1] == JJ && botCards[i][0] == '6'){
                     checkWith[0] = i;
                 }
+                else if(botCards[i][0] == tableCards[tableCardsSize - 1][0] && botCards[i][0] == '6'){
+                    checkWithSame[0] = i;
+                }
                 if(botCards[i][1] == JJ && botCards[i][0] == '7'){
                     checkWith[1] = i;
+                }
+                else if(botCards[i][0] == tableCards[tableCardsSize - 1][0] && botCards[i][0] == '7'){
+                    checkWithSame[1] = i;
                 }
                 if(botCards[i][1] == JJ && botCards[i][0] == '8'){
                     checkWith[2] = i;
                 }
+                else if(botCards[i][0] == tableCards[tableCardsSize - 1][0] && botCards[i][0] == '8'){
+                    checkWithSame[2] = i;
+                }
                 if(botCards[i][1] == JJ && botCards[i][0] == '9'){
                     checkWith[3] = i;
                 }
+                else if(botCards[i][0] == tableCards[tableCardsSize - 1][0] && botCards[i][0] == '9'){
+                    checkWithSame[3] = i;
+                }
                 if(botCards[i][1] == JJ && botCards[i][0] == '1'){
                     checkWith[4] = i;
+                }
+                else if(botCards[i][0] == tableCards[tableCardsSize - 1][0] && botCards[i][0] == '1'){
+                    checkWithSame[4] = i;
                 }
                 if(botCards[i][0] == 'J'){
                     checkWith[5] = i;
@@ -89,17 +109,25 @@ void MainWindow::botMove()
                 if(botCards[i][1] == JJ && botCards[i][0] == 'Q'){
                     checkWith[6] = i;
                 }
+                else if(botCards[i][0] == tableCards[tableCardsSize - 1][0] && botCards[i][0] == 'Q'){
+                    checkWithSame[6] = i;
+                }
                 if(botCards[i][1] == JJ && botCards[i][0] == 'K'){
                     checkWith[7] = i;
+                }
+                else if(botCards[i][0] == tableCards[tableCardsSize - 1][0] && botCards[i][0] == 'K'){
+                    checkWithSame[7] = i;
                 }
                 if(botCards[i][1] == JJ && botCards[i][0] == 'A'){
                     checkWith[8] = i;
                 }
+                else if(botCards[i][0] == tableCards[tableCardsSize - 1][0] && botCards[i][0] == 'A'){
+                    checkWithSame[8] = i;
+                }
             }
             if(checkWith[0] < botCardsSize && checkWith[8] < botCardsSize){
                 finalmove[0] = checkWith[0];
-                finalmove[1] = checkWith[8];
-                finalmoveSize = 2;
+                finalmoveSize = 1;
                 Jackchoose = "";
                 ui->label_3->hide();
             }
@@ -109,10 +137,15 @@ void MainWindow::botMove()
                 Jackchoose = "";
                 ui->label_3->hide();
             }
+            else if(checkWithSame[8] < botCardsSize){
+                finalmove[0] = checkWithSame[8];
+                finalmoveSize = 1;
+                Jackchoose = "";
+                ui->label_3->hide();
+            }
             else if(checkWith[0] < botCardsSize && checkWith[2] < botCardsSize){
                 finalmove[0] = checkWith[0];
-                finalmove[1] = checkWith[2];
-                finalmoveSize = 2;
+                finalmoveSize = 1;
                 Jackchoose = "";
                 ui->label_3->hide();
             }
@@ -122,29 +155,38 @@ void MainWindow::botMove()
                 Jackchoose = "";
                 ui->label_3->hide();
             }
+            else if(checkWithSame[2] < botCardsSize){
+                finalmove[0] = checkWithSame[2];
+                finalmoveSize = 1;
+                Jackchoose = "";
+                ui->label_3->hide();
+            }
             else if(checkWith[0] < botCardsSize && checkWith[7] < botCardsSize){
                 finalmove[0] = checkWith[0];
-                finalmove[1] = checkWith[7];
-                finalmoveSize = 2;
+                finalmoveSize = 1;
                 Jackchoose = "";
                 ui->label_3->hide();
             }
             else if(checkWith[0] < botCardsSize && checkWith[6] < botCardsSize){
                 finalmove[0] = checkWith[0];
-                finalmove[1] = checkWith[6];
-                finalmoveSize = 2;
+                finalmoveSize = 1;
                 Jackchoose = "";
                 ui->label_3->hide();
             }
             else if(checkWith[0] < botCardsSize && checkWith[4] < botCardsSize){
                 finalmove[0] = checkWith[0];
-                finalmove[1] = checkWith[4];
-                finalmoveSize = 2;
+                finalmoveSize = 1;
                 Jackchoose = "";
                 ui->label_3->hide();
             }
             else if(checkWith[7] < botCardsSize){
                 finalmove[0] = checkWith[7];
+                finalmoveSize = 1;
+                Jackchoose = "";
+                ui->label_3->hide();
+            }
+            else if(checkWithSame[7] < botCardsSize){
+                finalmove[0] = checkWithSame[7];
                 finalmoveSize = 1;
                 Jackchoose = "";
                 ui->label_3->hide();
@@ -155,16 +197,27 @@ void MainWindow::botMove()
                 Jackchoose = "";
                 ui->label_3->hide();
             }
+            else if(checkWithSame[6] < botCardsSize){
+                finalmove[0] = checkWithSame[6];
+                finalmoveSize = 1;
+                Jackchoose = "";
+                ui->label_3->hide();
+            }
             else if(checkWith[4] < botCardsSize){
                 finalmove[0] = checkWith[4];
                 finalmoveSize = 1;
                 Jackchoose = "";
                 ui->label_3->hide();
             }
+            else if(checkWithSame[4] < botCardsSize){
+                finalmove[0] = checkWithSame[4];
+                finalmoveSize = 1;
+                Jackchoose = "";
+                ui->label_3->hide();
+            }
             else if(checkWith[0] < botCardsSize && checkWith[1] < botCardsSize){
                 finalmove[0] = checkWith[0];
-                finalmove[1] = checkWith[1];
-                finalmoveSize = 2;
+                finalmoveSize = 1;
                 Jackchoose = "";
                 ui->label_3->hide();
             }
@@ -174,15 +227,26 @@ void MainWindow::botMove()
                 Jackchoose = "";
                 ui->label_3->hide();
             }
+            else if(checkWithSame[1] < botCardsSize){
+                finalmove[0] = checkWithSame[1];
+                finalmoveSize = 1;
+                Jackchoose = "";
+                ui->label_3->hide();
+            }
             else if(checkWith[0] < botCardsSize && checkWith[3] < botCardsSize){
                 finalmove[0] = checkWith[0];
-                finalmove[1] = checkWith[3];
-                finalmoveSize = 2;
+                finalmoveSize = 1;
                 Jackchoose = "";
                 ui->label_3->hide();
             }
             else if(checkWith[3] < botCardsSize){
                 finalmove[0] = checkWith[3];
+                finalmoveSize = 1;
+                Jackchoose = "";
+                ui->label_3->hide();
+            }
+            else if(checkWithSame[3] < botCardsSize){
+                finalmove[0] = checkWithSame[3];
                 finalmoveSize = 1;
                 Jackchoose = "";
                 ui->label_3->hide();
@@ -196,17 +260,19 @@ void MainWindow::botMove()
                 finalmove[0] = checkWith[5];
                 finalmoveSize = 1;
                 for(int i = 0; i < botCardsSize; i++){
-                    if(botCards[i][1] == 'c'){
-                        sign[0]++;
-                    }
-                    else if(botCards[i][1] == 'k'){
-                        sign[1]++;
-                    }
-                    else if(botCards[i][1] == 'b'){
-                        sign[2]++;
-                    }
-                    else if(botCards[i][1] == 'p'){
-                        sign[3]++;
+                    if(botCards[i][0] != 'J'){
+                        if(botCards[i][1] == 'c'){
+                            sign[0]++;
+                        }
+                        else if(botCards[i][1] == 'k'){
+                            sign[1]++;
+                        }
+                        else if(botCards[i][1] == 'b'){
+                            sign[2]++;
+                        }
+                        else if(botCards[i][1] == 'p'){
+                            sign[3]++;
+                        }
                     }
                 }
                 int k = 0;
@@ -242,6 +308,12 @@ void MainWindow::botMove()
                 Jackchoose = "";
                 ui->label_3->hide();
             }
+            else if(checkWithSame[0] < botCardsSize){
+                finalmove[0] = checkWithSame[0];
+                finalmoveSize = 1;
+                Jackchoose = "";
+                ui->label_3->hide();
+            }
             else if(BcheckForTake == 0){
                 onRemoveWidgetColod();
                 if(tableCards[tableCardsSize - 1][0] == '6'){
@@ -260,7 +332,7 @@ void MainWindow::botMove()
             for(int i = 0; i < botCardsSize; i++){
                 if(botCards[i][0] == tableCards[tableCardsSize - 1][0]){
                     finalmove[0] = i;
-                    finalmoveSize++;
+                    finalmoveSize = 1;
                     Jackchoose = "";
                     ui->label_3->hide();
                     if(botCards[i][0] == 'J'){
@@ -314,7 +386,7 @@ void MainWindow::botMove()
                 }
             }
         }
-        if(finalmoveSize > 0){
+        if(finalmoveSize > 0 && finalmove[0] < botCardsSize){
             if(botCards[finalmove[finalmoveSize - 1]][0] == 'J'){
                 bJackKol++;
             }
@@ -639,6 +711,7 @@ void MainWindow::gameEnd()
         ui->label_5->hide();
         ui->label_6->hide();
         ui->label_7->hide();
+        ui->label_8->hide();
         ui->label_7->setText(QString::fromStdString("Points " + std::to_string(PointsX) + "x"));
 
         pJackKol = 0;
@@ -655,6 +728,7 @@ void MainWindow::gameEnd()
             playerPoints = 0;
         }
         else{
+            QMessageBox::about(this, "Set", QString::fromStdString("Set!!!\nComputer points: " + std::to_string(botPoints) + "\nYour points: " + std::to_string(playerPoints)));
             ui->label_5->setText(QString::fromStdString("Points: " + std::to_string(playerPoints)));
             ui->label_6->setText(QString::fromStdString("Points: " + std::to_string(botPoints)));
             ui->label->setVisible(true);
@@ -662,6 +736,9 @@ void MainWindow::gameEnd()
             ui->label_5->setVisible(true);
             ui->label_6->setVisible(true);
             ui->label_7->setVisible(true);
+            ui->label_8->setVisible(true);
+            Set++;
+            ui->label_8->setText(QString::fromStdString("Set: " + std::to_string(Set)));
 
             Start();
             bool mv = move;
@@ -672,17 +749,19 @@ void MainWindow::gameEnd()
                 sign[2] = 0;
                 sign[3] = 0;
                 for(int i = 0; i < botCardsSize; i++){
-                    if(botCards[i][1] == 'c'){
-                        sign[0]++;
-                    }
-                    else if(botCards[i][1] == 'k'){
-                        sign[1]++;
-                    }
-                    else if(botCards[i][1] == 'b'){
-                        sign[2]++;
-                    }
-                    else if(botCards[i][1] == 'p'){
-                        sign[3]++;
+                    if(botCards[i][0] != 'J'){
+                        if(botCards[i][1] == 'c'){
+                            sign[0]++;
+                        }
+                        else if(botCards[i][1] == 'k'){
+                            sign[1]++;
+                        }
+                        else if(botCards[i][1] == 'b'){
+                            sign[2]++;
+                        }
+                        else if(botCards[i][1] == 'p'){
+                            sign[3]++;
+                        }
                     }
                 }
                 int k = 0;
@@ -1033,6 +1112,9 @@ void MainWindow::on_actionStart_the_game_triggered()
     ui->label_5->setVisible(true);
     ui->label_6->setVisible(true);
     ui->label_7->setVisible(true);
+    Set = 1;
+    ui->label_8->setText(QString::fromStdString("Set: " + std::to_string(Set)));
+    ui->label_8->setVisible(true);
 
     for(int i = 0; i < botCardsSize; i++){
         delete botButtons[i];
@@ -1084,17 +1166,19 @@ void MainWindow::on_actionStart_the_game_triggered()
         sign[2] = 0;
         sign[3] = 0;
         for(int i = 0; i < botCardsSize; i++){
-            if(botCards[i][1] == 'c'){
-                sign[0]++;
-            }
-            else if(botCards[i][1] == 'k'){
-                sign[1]++;
-            }
-            else if(botCards[i][1] == 'b'){
-                sign[2]++;
-            }
-            else if(botCards[i][1] == 'p'){
-                sign[3]++;
+            if(botCards[i][0] != 'J'){
+                if(botCards[i][1] == 'c'){
+                    sign[0]++;
+                }
+                else if(botCards[i][1] == 'k'){
+                    sign[1]++;
+                }
+                else if(botCards[i][1] == 'b'){
+                    sign[2]++;
+                }
+                else if(botCards[i][1] == 'p'){
+                    sign[3]++;
+                }
             }
         }
         int k = 0;
@@ -1141,6 +1225,7 @@ void MainWindow::on_actionQuit_2_triggered()
 void MainWindow::on_pushButton_clicked()
 {
     move = 1;
+    secMove = 0;
     checkForTake = 0;
     BcheckForTake = 0;
     ui->label_2->setText("Enemy turn");
