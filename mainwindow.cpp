@@ -40,9 +40,6 @@ MainWindow::MainWindow(QWidget *parent)
     pJackKol = 0;
     bJackKol = 0;
 
-    timer = new QTimer();
-    connect(timer, SIGNAL(timeout()), this, SLOT(botMove()));
-    timer->start(2000);
 }
 
 MainWindow::~MainWindow()
@@ -608,7 +605,7 @@ void MainWindow::shuffling()
     delete ColodButtons[0];
 
     for(int i = 0; i < tableCardsSize - 1; i++){
-        int ran = rand() % tableCardsSize - 1;
+        int ran = rand() % (tableCardsSize - 1);
         if(tableCards[ran] == ""){
             i--;
         }
@@ -718,11 +715,13 @@ void MainWindow::gameEnd()
         bJackKol = 0;
 
         if(playerPoints > 125){
+            delete timer;
             QMessageBox::about(this, "Game over", QString::fromStdString("Unfortunately. You lost!\nComputer points: " + std::to_string(botPoints) + "\nYour points: " + std::to_string(playerPoints)));
             botPoints = 0;
             playerPoints = 0;
         }
         else if(botPoints > 125){
+            delete timer;
             QMessageBox::about(this, "Game over", QString::fromStdString("Congratulations! You won!!\nComputer points: " + std::to_string(botPoints) + "\nYour points: " + std::to_string(playerPoints)));
             botPoints = 0;
             playerPoints = 0;
@@ -859,6 +858,11 @@ void MainWindow::operation(bool mv)
                 delete ColodButtons[ColodCardsSize - 1];
                 ColodCardsSize--;
                 if(ColodCardsSize == 0){
+                    onAddWidgetColod(0);
+                    ui->label_4->setText(QString::fromStdString("^ \nShuffling (" + std::to_string(PointsX + 1) + "x)"));
+                    ui->label_4->show();
+                }
+                if(ColodCardsSize == 0){
                     shuffling();
                 }
                 botCards[botCardsSize] = ColodCards[ColodCardsSize - 1];
@@ -915,6 +919,11 @@ void MainWindow::operation(bool mv)
                 ColodCards[ColodCardsSize - 1] = "";
                 delete ColodButtons[ColodCardsSize - 1];
                 ColodCardsSize--;
+                if(ColodCardsSize == 0){
+                    onAddWidgetColod(0);
+                    ui->label_4->setText(QString::fromStdString("^ \nShuffling (" + std::to_string(PointsX + 1) + "x)"));
+                    ui->label_4->show();
+                }
                 if(ColodCardsSize == 0){
                     shuffling();
                 }
@@ -1210,6 +1219,10 @@ void MainWindow::on_actionStart_the_game_triggered()
     }
     secondmove();
     operation(mv);
+
+    timer = new QTimer();
+    connect(timer, SIGNAL(timeout()), this, SLOT(botMove()));
+    timer->start(2000);
 }
 
 

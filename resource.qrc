@@ -41,5 +41,6 @@
         <file>PNG-cards-1.3/queen_of_diamonds2.png</file>
         <file>PNG-cards-1.3/queen_of_hearts2.png</file>
         <file>PNG-cards-1.3/queen_of_spades2.png</file>
+        <file>PNG-cards-1.3/icon.png</file>
     </qresource>
 </RCC>
