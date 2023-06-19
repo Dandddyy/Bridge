@@ -1,48 +1,12 @@
 #include "mainwindow.h"
 #include <QMessageBox>
 #include "ui_mainwindow.h"
-#include <fstream>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
-
-    window = new optionwindow;
-
-    ui->pushButton_9->hide();
-
-    std::ifstream fin;
-    fin.open("GameData.txt");
-    if(fin.is_open()){
-        std::string getstr;
-        fin >> getstr;
-        if(getstr == "Can_Resume"){
-             ui->pushButton_9->show();
-             ui->pushButton_6->setGeometry(338, 160, 121, 71);
-             ui->pushButton_6->setText("Start The\nNew Game");
-             ui->pushButton_6->setStyleSheet("font-family: 'Segoe UI'; font-size: 12pt; border: 2px solid; border-color: black; border-radius: 20px; background-color: white; color: black; font: bold;");
-        }
-    }
-    fin.close();
-
-    connect(this, &MainWindow::QSMsignal2, window, &optionwindow::QSMslot2);
-
-    fin.open("OptionsData.txt");
-    if(fin.is_open()){
-        fin >> QSMode;
-        fin >> PointsMode;
-        if(QSMode == 0 || QSMode == 1){
-            emit QSMsignal2(QSMode, PointsMode);
-        }
-        else{
-            QSMode = false;
-            PointsMode = false;
-        }
-
-    }
-    fin.close();
 
     playerCardsSize = 0;
     botCardsSize = 0;
@@ -66,8 +30,6 @@ MainWindow::MainWindow(QWidget *parent)
     ui->label_6->hide();
     ui->label_7->hide();
     ui->label_8->hide();
-    ui->label_11->hide();
-    ui->label_12->hide();
 
     checkForTake = 0;
     BcheckForTake = 0;
@@ -77,22 +39,6 @@ MainWindow::MainWindow(QWidget *parent)
 
     pJackKol = 0;
     bJackKol = 0;
-
-    QImage im(":/img/PNG-cards-1.3/icon.png");
-    ui->label_9->setScaledContents(true);
-    ui->label_9->setPixmap(QPixmap::fromImage(im));
-
-    QImage ima(":/img/PNG-cards-1.3/QSM.png");
-    ui->label_11->setScaledContents(true);
-    ui->label_11->setPixmap(QPixmap::fromImage(ima));
-
-    QIcon ic(":/img/PNG-cards-1.3/kindpng_4637727.png");
-    ui->pushButton_7->setIcon(ic);
-    QIcon ic1(":/img/PNG-cards-1.3/exit-icon-4597.png");
-    ui->pushButton_8->setIcon(ic1);
-
-    connect(window, &optionwindow::QSMsignal, this, &MainWindow::QSMslot);
-    connect(window, &optionwindow::Pointssignal, this, &MainWindow::Pointsslot);
 
 }
 
@@ -176,19 +122,7 @@ void MainWindow::botMove()
                     checkWithSame[8] = i;
                 }
             }
-            if(checkWith[6] < botCardsSize && botCards[checkWith[6]][1] == 'p' && QSMode == true){
-                finalmove[0] = checkWith[6];
-                finalmoveSize = 1;
-                Jackchoose = "";
-                ui->label_3->hide();
-            }
-            else if(checkWithSame[6] < botCardsSize && botCards[checkWithSame[6]][1] == 'p' && QSMode == true){
-                finalmove[0] = checkWithSame[6];
-                finalmoveSize = 1;
-                Jackchoose = "";
-                ui->label_3->hide();
-            }
-            else if(checkWith[0] < botCardsSize && checkWith[8] < botCardsSize){
+            if(checkWith[0] < botCardsSize && checkWith[8] < botCardsSize){
                 finalmove[0] = checkWith[0];
                 finalmoveSize = 1;
                 Jackchoose = "";
@@ -387,7 +321,6 @@ void MainWindow::botMove()
                 secMove = 0;
                 move = 0;
                 ui->label_2->setText("Your turn");
-                ui->label_2->setStyleSheet("font-family: 'Segoe UI'; font-size: 8pt; border: 1px solid; border-color: rgb(46, 80, 200);  border-radius: 3px; background-color: rgb(0,81,80); color: white; font: bold;");
                 BcheckForTake = 0;
                 checkForTake = 0;
             }
@@ -485,7 +418,6 @@ void MainWindow::botMove()
                 gameEnd();
             }
         }
-        AutoSave();
     }
 }
 
@@ -615,7 +547,6 @@ void MainWindow::onRemoveWidgetPlayer()
             gameEnd();
         }
     }
-    AutoSave();
 }
 
 void MainWindow::onRemoveWidgetColod()
@@ -631,7 +562,8 @@ void MainWindow::onRemoveWidgetColod()
             ColodCards[ColodCardsSize - 1] = "";
             delete ColodButtons[ColodCardsSize - 1];
             ColodCardsSize--;
-            ui->label->setText(QString::fromStdString(std::to_string(ColodCardsSize)));
+            std::string kol = std::to_string(ColodCardsSize);
+            ui->label->setText(QString::fromStdString(kol));
             if(tableCards[tableCardsSize - 1][0] != '6'){
                 ui->pushButton->show();
                 checkForTake = 1;
@@ -654,7 +586,8 @@ void MainWindow::onRemoveWidgetColod()
             ColodCards[ColodCardsSize - 1] = "";
             delete ColodButtons[ColodCardsSize - 1];
             ColodCardsSize--;
-            ui->label->setText(QString::fromStdString(std::to_string(ColodCardsSize)));
+            std::string kol = std::to_string(ColodCardsSize);
+            ui->label->setText(QString::fromStdString(kol));
             if(tableCards[tableCardsSize - 1][0] != '6'){
                 BcheckForTake = 1;
             }
@@ -665,7 +598,6 @@ void MainWindow::onRemoveWidgetColod()
             }
         }
     }
-    AutoSave();
 }
 
 void MainWindow::shuffling()
@@ -732,16 +664,12 @@ void MainWindow::gameEnd()
             }
         }
 
-        if(botPoints == 225 && PointsMode)
+        if(botPoints == 125){
             botPoints = 0;
-        else if(botPoints == 125)
-            botPoints = 0;
-
-        if(playerPoints == 225 && PointsMode)
+        }
+        else if(playerPoints == 125){
             playerPoints = 0;
-        else if(playerPoints == 125)
-            playerPoints = 0;
-
+        }
         for(int i = 0; i < botCardsSize; i++){
             delete botButtons[i];
             botCards[i] = "";
@@ -749,9 +677,6 @@ void MainWindow::gameEnd()
         for(int i = 0; i < playerCardsSize; i++){
             delete playerButtons[i];
             playerCards[i] = "";
-        }
-        if(ColodCardsSize == 0){
-            delete ColodButtons[0];
         }
         for(int i = 0; i < ColodCardsSize; i++){
             delete ColodButtons[i];
@@ -784,50 +709,22 @@ void MainWindow::gameEnd()
         ui->label_6->hide();
         ui->label_7->hide();
         ui->label_8->hide();
-        ui->label_11->hide();
-        ui->label_12->hide();
         ui->label_7->setText(QString::fromStdString("Points " + std::to_string(PointsX) + "x"));
 
         pJackKol = 0;
         bJackKol = 0;
 
-        if((playerPoints > 125 && !PointsMode) || (playerPoints > 225 && PointsMode)){
+        if(playerPoints > 125){
             delete timer;
             QMessageBox::about(this, "Game over", QString::fromStdString("Unfortunately. You lost!\nComputer points: " + std::to_string(botPoints) + "\nYour points: " + std::to_string(playerPoints)));
             botPoints = 0;
             playerPoints = 0;
-            ui->pushButton_6->show();
-            ui->pushButton_7->show();
-            ui->pushButton_8->show();
-            ui->label_11->hide();
-            ui->label_12->hide();
-            ui->label_9->show();
-            ui->label_10->show();
-            ui->line->show();
-            ui->line_2->show();
-            std::ofstream fout;
-            fout.open("GameData.txt");
-            fout.close();
-            ui->pushButton_6->setGeometry(338, 160, 251, 71);
         }
-        else if((botPoints > 125 && !PointsMode) || (botPoints > 225 && PointsMode)){
+        else if(botPoints > 125){
             delete timer;
             QMessageBox::about(this, "Game over", QString::fromStdString("Congratulations! You won!!\nComputer points: " + std::to_string(botPoints) + "\nYour points: " + std::to_string(playerPoints)));
             botPoints = 0;
             playerPoints = 0;
-            ui->pushButton_6->show();
-            ui->pushButton_7->show();
-            ui->pushButton_8->show();
-            ui->label_11->hide();
-            ui->label_12->hide();
-            ui->label_9->show();
-            ui->label_10->show();
-            ui->line->show();
-            ui->line_2->show();
-            std::ofstream fout;
-            fout.open("GameData.txt");
-            fout.close();
-            ui->pushButton_6->setGeometry(338, 160, 251, 71);
         }
         else{
             QMessageBox::about(this, "Set", QString::fromStdString("Set!!!\nComputer points: " + std::to_string(botPoints) + "\nYour points: " + std::to_string(playerPoints)));
@@ -839,12 +736,6 @@ void MainWindow::gameEnd()
             ui->label_6->setVisible(true);
             ui->label_7->setVisible(true);
             ui->label_8->setVisible(true);
-
-            if(QSMode)
-                ui->label_11->setVisible(true);
-
-            ui->label_12->show();
-
             Set++;
             ui->label_8->setText(QString::fromStdString("Set: " + std::to_string(Set)));
 
@@ -946,13 +837,31 @@ bool MainWindow::possibleMove(std::string p, std::string t, bool ndmove)
 void MainWindow::operation(bool mv)
 {
     if(mv == 0){
-        if(tableCards[tableCardsSize - 1] == "Qp" && QSMode == true){
+        if(tableCards[tableCardsSize - 1][0] == 'A'){
             secMove = 0;
             move = 0;
             ui->label_2->setText("Your turn");
-            ui->label_2->setStyleSheet("font-family: 'Segoe UI'; font-size: 8pt; border: 1px solid; border-color: rgb(46, 80, 200);  border-radius: 3px; background-color: rgb(0,81,80); color: white; font: bold;");
             ui->pushButton->hide();
-            for(int i = 0; i < 5; i++){
+        }
+        else if(tableCards[tableCardsSize - 1][0] == '8'){
+                if(ColodCardsSize == 0){
+                    shuffling();
+                }
+                secMove = 0;
+                move = 0;
+                ui->label_2->setText("Your turn");
+                ui->pushButton->hide();
+                botCards[botCardsSize] = ColodCards[ColodCardsSize - 1];
+                onAddWidgetBot(botCardsSize);
+                botCardsSize++;
+                ColodCards[ColodCardsSize - 1] = "";
+                delete ColodButtons[ColodCardsSize - 1];
+                ColodCardsSize--;
+                if(ColodCardsSize == 0){
+                    onAddWidgetColod(0);
+                    ui->label_4->setText(QString::fromStdString("^ \nShuffling (" + std::to_string(PointsX + 1) + "x)"));
+                    ui->label_4->show();
+                }
                 if(ColodCardsSize == 0){
                     shuffling();
                 }
@@ -962,83 +871,59 @@ void MainWindow::operation(bool mv)
                 ColodCards[ColodCardsSize - 1] = "";
                 delete ColodButtons[ColodCardsSize - 1];
                 ColodCardsSize--;
-            }
-            if(ColodCardsSize == 0){
-                onAddWidgetColod(0);
-                ui->label_4->setText(QString::fromStdString("^ \nShuffling (" + std::to_string(PointsX + 1) + "x)"));
-                ui->label_4->show();
-            }
-            ui->label->setText(QString::fromStdString(std::to_string(ColodCardsSize)));
-        }
-        else if(tableCards[tableCardsSize - 1][0] == 'A'){
-            secMove = 0;
-            move = 0;
-            ui->label_2->setText("Your turn");
-            ui->label_2->setStyleSheet("font-family: 'Segoe UI'; font-size: 8pt; border: 1px solid; border-color: rgb(46, 80, 200);  border-radius: 3px; background-color: rgb(0,81,80); color: white; font: bold;");
-            ui->pushButton->hide();
-        }
-        else if(tableCards[tableCardsSize - 1][0] == '8'){
-            if(ColodCardsSize == 0){
-                shuffling();
-            }
-            secMove = 0;
-            move = 0;
-            ui->label_2->setText("Your turn");
-            ui->label_2->setStyleSheet("font-family: 'Segoe UI'; font-size: 8pt; border: 1px solid; border-color: rgb(46, 80, 200);  border-radius: 3px; background-color: rgb(0,81,80); color: white; font: bold;");
-            ui->pushButton->hide();
-            botCards[botCardsSize] = ColodCards[ColodCardsSize - 1];
-            onAddWidgetBot(botCardsSize);
-            botCardsSize++;
-            ColodCards[ColodCardsSize - 1] = "";
-            delete ColodButtons[ColodCardsSize - 1];
-            ColodCardsSize--;
-            if(ColodCardsSize == 0){
-                onAddWidgetColod(0);
-                ui->label_4->setText(QString::fromStdString("^ \nShuffling (" + std::to_string(PointsX + 1) + "x)"));
-                ui->label_4->show();
-            }
-            if(ColodCardsSize == 0){
-                shuffling();
-            }
-            botCards[botCardsSize] = ColodCards[ColodCardsSize - 1];
-            onAddWidgetBot(botCardsSize);
-            botCardsSize++;
-            ColodCards[ColodCardsSize - 1] = "";
-            delete ColodButtons[ColodCardsSize - 1];
-            ColodCardsSize--;
-            ui->label->setText(QString::fromStdString(std::to_string(ColodCardsSize)));
-            if(ColodCardsSize == 0){
-                onAddWidgetColod(0);
-                ui->label_4->setText(QString::fromStdString("^ \nShuffling (" + std::to_string(PointsX + 1) + "x)"));
-                ui->label_4->show();
-            }
+                std::string kol = std::to_string(ColodCardsSize);
+                ui->label->setText(QString::fromStdString(kol));
+                if(ColodCardsSize == 0){
+                    onAddWidgetColod(0);
+                    ui->label_4->setText(QString::fromStdString("^ \nShuffling (" + std::to_string(PointsX + 1) + "x)"));
+                    ui->label_4->show();
+                }
         }
         else if(tableCards[tableCardsSize - 1][0] == '7'){
-            if(ColodCardsSize == 0){
-                shuffling();
-            }
-            botCards[botCardsSize] = ColodCards[ColodCardsSize - 1];
-            onAddWidgetBot(botCardsSize);
-            botCardsSize++;
-            ColodCards[ColodCardsSize - 1] = "";
-            delete ColodButtons[ColodCardsSize - 1];
-            ColodCardsSize--;
-            ui->label->setText(QString::fromStdString(std::to_string(ColodCardsSize)));
-            if(ColodCardsSize == 0){
-                onAddWidgetColod(0);
-                ui->label_4->setText(QString::fromStdString("^ \nShuffling (" + std::to_string(PointsX + 1) + "x)"));
-                ui->label_4->show();
-            }
+                if(ColodCardsSize == 0){
+                    shuffling();
+                }
+                botCards[botCardsSize] = ColodCards[ColodCardsSize - 1];
+                onAddWidgetBot(botCardsSize);
+                botCardsSize++;
+                ColodCards[ColodCardsSize - 1] = "";
+                delete ColodButtons[ColodCardsSize - 1];
+                ColodCardsSize--;
+                std::string kol = std::to_string(ColodCardsSize);
+                ui->label->setText(QString::fromStdString(kol));
+                if(ColodCardsSize == 0){
+                    onAddWidgetColod(0);
+                    ui->label_4->setText(QString::fromStdString("^ \nShuffling (" + std::to_string(PointsX + 1) + "x)"));
+                    ui->label_4->show();
+                }
         }
     }
     else{
-        if(tableCards[tableCardsSize - 1] == "Qp" && QSMode == true){
+        if(tableCards[tableCardsSize - 1][0] == 'A'){
             secMove = 0;
             move = 1;
             ui->label_2->setText("Enemy turn");
-            ui->label_2->setStyleSheet("font-family: 'Segoe UI'; font-size: 8pt; border: 1px solid; border-color: rgb(192,192,192);  border-radius: 3px;  color: white; font: bold;");
             BcheckForTake = 0;
-            for(int i = 0; i < 5; i++){
+        }
+        else if(tableCards[tableCardsSize - 1][0] == '8'){
+                if(ColodCardsSize == 0){
+                    shuffling();
+                }
+                BcheckForTake = 0;
+                secMove = 0;
+                move = 1;
+                ui->label_2->setText("Enemy turn");
+                playerCards[playerCardsSize] = ColodCards[ColodCardsSize - 1];
+                onAddWidgetPlayer(playerCards[playerCardsSize], playerCardsSize);
+                playerCardsSize++;
+                ColodCards[ColodCardsSize - 1] = "";
+                delete ColodButtons[ColodCardsSize - 1];
+                ColodCardsSize--;
+                if(ColodCardsSize == 0){
+                    onAddWidgetColod(0);
+                    ui->label_4->setText(QString::fromStdString("^ \nShuffling (" + std::to_string(PointsX + 1) + "x)"));
+                    ui->label_4->show();
+                }
                 if(ColodCardsSize == 0){
                     shuffling();
                 }
@@ -1048,74 +933,31 @@ void MainWindow::operation(bool mv)
                 ColodCards[ColodCardsSize - 1] = "";
                 delete ColodButtons[ColodCardsSize - 1];
                 ColodCardsSize--;
-            }
-            if(ColodCardsSize == 0){
-                onAddWidgetColod(0);
-                ui->label_4->setText(QString::fromStdString("^ \nShuffling (" + std::to_string(PointsX + 1) + "x)"));
-                ui->label_4->show();
-            }
-            ui->label->setText(QString::fromStdString(std::to_string(ColodCardsSize)));
-        }
-        else if(tableCards[tableCardsSize - 1][0] == 'A'){
-            secMove = 0;
-            move = 1;
-            ui->label_2->setText("Enemy turn");
-            ui->label_2->setStyleSheet("font-family: 'Segoe UI'; font-size: 8pt; border: 1px solid; border-color: rgb(192,192,192);  border-radius: 3px;  color: white; font: bold;");
-            BcheckForTake = 0;
-        }
-        else if(tableCards[tableCardsSize - 1][0] == '8'){
-            if(ColodCardsSize == 0){
-                shuffling();
-            }
-            BcheckForTake = 0;
-            secMove = 0;
-            move = 1;
-            ui->label_2->setText("Enemy turn");
-            ui->label_2->setStyleSheet("font-family: 'Segoe UI'; font-size: 8pt; border: 1px solid; border-color: rgb(192,192,192);  border-radius: 3px;  color: white; font: bold;");
-            playerCards[playerCardsSize] = ColodCards[ColodCardsSize - 1];
-            onAddWidgetPlayer(playerCards[playerCardsSize], playerCardsSize);
-            playerCardsSize++;
-            ColodCards[ColodCardsSize - 1] = "";
-            delete ColodButtons[ColodCardsSize - 1];
-            ColodCardsSize--;
-            if(ColodCardsSize == 0){
-                onAddWidgetColod(0);
-                ui->label_4->setText(QString::fromStdString("^ \nShuffling (" + std::to_string(PointsX + 1) + "x)"));
-                ui->label_4->show();
-            }
-            if(ColodCardsSize == 0){
-                shuffling();
-            }
-            playerCards[playerCardsSize] = ColodCards[ColodCardsSize - 1];
-            onAddWidgetPlayer(playerCards[playerCardsSize], playerCardsSize);
-            playerCardsSize++;
-            ColodCards[ColodCardsSize - 1] = "";
-            delete ColodButtons[ColodCardsSize - 1];
-            ColodCardsSize--;
-            ui->label->setText(QString::fromStdString(std::to_string(ColodCardsSize)));
-            if(ColodCardsSize == 0){
-                onAddWidgetColod(0);
-                ui->label_4->setText(QString::fromStdString("^ \nShuffling (" + std::to_string(PointsX + 1) + "x)"));
-                ui->label_4->show();
-            }
+                std::string kol = std::to_string(ColodCardsSize);
+                ui->label->setText(QString::fromStdString(kol));
+                if(ColodCardsSize == 0){
+                    onAddWidgetColod(0);
+                    ui->label_4->setText(QString::fromStdString("^ \nShuffling (" + std::to_string(PointsX + 1) + "x)"));
+                    ui->label_4->show();
+                }
         }
         else if(tableCards[tableCardsSize - 1][0] == '7'){
-            if(ColodCardsSize == 0){
-                shuffling();
-            }
-            playerCards[playerCardsSize] = ColodCards[ColodCardsSize - 1];
-            onAddWidgetPlayer(playerCards[playerCardsSize], playerCardsSize);
-            playerCardsSize++;
-            ColodCards[ColodCardsSize - 1] = "";
-            delete ColodButtons[ColodCardsSize - 1];
-            ColodCardsSize--;
-            std::string kol = std::to_string(ColodCardsSize);
-            ui->label->setText(QString::fromStdString(kol));
-            if(ColodCardsSize == 0){
-                onAddWidgetColod(0);
-                ui->label_4->setText(QString::fromStdString("^ \nShuffling (" + std::to_string(PointsX + 1) + "x)"));
-                ui->label_4->show();
-            }
+                if(ColodCardsSize == 0){
+                    shuffling();
+                }
+                playerCards[playerCardsSize] = ColodCards[ColodCardsSize - 1];
+                onAddWidgetPlayer(playerCards[playerCardsSize], playerCardsSize);
+                playerCardsSize++;
+                ColodCards[ColodCardsSize - 1] = "";
+                delete ColodButtons[ColodCardsSize - 1];
+                ColodCardsSize--;
+                std::string kol = std::to_string(ColodCardsSize);
+                ui->label->setText(QString::fromStdString(kol));
+                if(ColodCardsSize == 0){
+                    onAddWidgetColod(0);
+                    ui->label_4->setText(QString::fromStdString("^ \nShuffling (" + std::to_string(PointsX + 1) + "x)"));
+                    ui->label_4->show();
+                }
         }
     }
 }
@@ -1126,13 +968,11 @@ void MainWindow::secondmove()
         secMove = 0;
         move = 1;
         ui->label_2->setText("Enemy turn");
-        ui->label_2->setStyleSheet("font-family: 'Segoe UI'; font-size: 8pt; border: 1px solid; border-color: rgb(192,192,192);  border-radius: 3px;  color: white; font: bold;");
         for(int i = 0; i < playerCardsSize; i++){
             if(playerCards[i][0] == tableCards[tableCardsSize - 1][0] || tableCards[tableCardsSize - 1][0] == '6' || tableCards[tableCardsSize - 1][0] == 'J'){
                 secMove = 1;
                 move = 0;
                 ui->label_2->setText("Your turn");
-                ui->label_2->setStyleSheet("font-family: 'Segoe UI'; font-size: 8pt; border: 1px solid; border-color: rgb(46, 80, 200);  border-radius: 3px; background-color: rgb(0,81,80); color: white; font: bold;");
                 if(tableCards[tableCardsSize - 1][0] != '6' && tableCards[tableCardsSize - 1][0] != 'J'){
                     ui->pushButton->show();
                 }
@@ -1149,11 +989,9 @@ void MainWindow::secondmove()
         secMove = 0;
         move = 0;
         ui->label_2->setText("Your turn");
-        ui->label_2->setStyleSheet("font-family: 'Segoe UI'; font-size: 8pt; border: 1px solid; border-color: rgb(46, 80, 200);  border-radius: 3px; background-color: rgb(0,81,80); color: white; font: bold;");
         if(tableCards[tableCardsSize - 1][0] == '6'){
             move = 1;
             ui->label_2->setText("Enemy turn");
-            ui->label_2->setStyleSheet("font-family: 'Segoe UI'; font-size: 8pt; border: 1px solid; border-color: rgb(192,192,192);  border-radius: 3px;  color: white; font: bold;");
             BcheckForTake = 0;
         }
         else{
@@ -1162,7 +1000,6 @@ void MainWindow::secondmove()
                     secMove = 1;
                     move = 1;
                     ui->label_2->setText("Enemy turn");
-                    ui->label_2->setStyleSheet("font-family: 'Segoe UI'; font-size: 8pt; border: 1px solid; border-color: rgb(192,192,192);  border-radius: 3px;  color: white; font: bold;");
                 }
             }
         }
@@ -1265,7 +1102,8 @@ void MainWindow::Start()
         }
         ColodCards[i] = cardNames[it][jt];
         ColodCardsSize++;
-        ui->label->setText(QString::fromStdString(std::to_string(ColodCardsSize)));
+        std::string kol = std::to_string(ColodCardsSize);
+        ui->label->setText(QString::fromStdString(kol));
 
         onAddWidgetColod(i);
 
@@ -1273,160 +1111,9 @@ void MainWindow::Start()
     }
 }
 
-void MainWindow::AutoSave()
+
+void MainWindow::on_actionStart_the_game_triggered()
 {
-    if(playerCardsSize > 0 && botCardsSize > 0){
-        std::ofstream fout;
-        fout.open("GameData.txt");
-
-        if(fout.is_open()){
-
-            fout << "Can_Resume\n";
-
-            fout << playerCardsSize << "\n";
-            for(int i = 0; i < playerCardsSize; i++){
-                fout << playerCards[i] << "\n";
-            }
-
-            fout << botCardsSize << "\n";
-            for(int i = 0; i < botCardsSize; i++){
-                fout << botCards[i] << "\n";
-            }
-
-            fout << ColodCardsSize << "\n";
-            for(int i = 0; i < ColodCardsSize; i++){
-                fout << ColodCards[i] << "\n";
-            }
-
-            fout << tableCardsSize << "\n";
-            for(int i = 0; i < tableCardsSize; i++){
-                fout << tableCards[i] << "\n";
-            }
-
-            fout << move << "\n";
-            fout << secMove << "\n";
-            if(Jackchoose == "")
-                fout << "empty" << "\n";
-            else
-                fout << Jackchoose << "\n";
-            fout << checkForTake << "\n";
-            fout << BcheckForTake << "\n";
-            fout << playerPoints << "\n";
-            fout << botPoints << "\n";
-            fout << PointsX << "\n";
-            fout << pJackKol << "\n";
-            fout << bJackKol << "\n";
-            fout << Set << "\n";
-            fout << ui->pushButton->isVisible() << "\n";
-            fout << ui->pushButton_2->isVisible() << "\n";
-            fout << ui->label_3->isVisible() << "\n";
-            fout << QSMode << "\n";
-            fout << PointsMode;
-        }
-        fout.close();
-    }
-}
-
-void MainWindow::OptionsSave()
-{
-    std::ofstream fout;
-    fout.open("OptionsData.txt");
-
-    if(fout.is_open()){
-        fout << QSMode << "\n";
-        fout << PointsMode;
-    }
-    fout.close();
-}
-
-void MainWindow::on_pushButton_clicked()
-{
-    move = 1;
-    secMove = 0;
-    checkForTake = 0;
-    BcheckForTake = 0;
-    ui->label_2->setText("Enemy turn");
-    ui->label_2->setStyleSheet("font-family: 'Segoe UI'; font-size: 8pt; border: 1px solid; border-color: rgb(192,192,192);  border-radius: 3px;  color: white; font: bold;");
-    ui->pushButton->hide();
-}
-
-
-void MainWindow::on_pushButton_2_clicked()
-{
-    Jackchoose = "c";
-    ui->pushButton_2->hide();
-    ui->pushButton_3->hide();
-    ui->pushButton_4->hide();
-    ui->pushButton_5->hide();
-    move = 1;
-    ui->label_2->setText("Enemy turn");
-    ui->label_2->setStyleSheet("font-family: 'Segoe UI'; font-size: 8pt; border: 1px solid; border-color: rgb(192,192,192);  border-radius: 3px;  color: white; font: bold;");
-    secMove = 0;
-    ui->label_3->setStyleSheet("border-image: url(:/img/PNG-cards-1.3/chirva.png);");
-    ui->label_3->show();
-}
-
-
-void MainWindow::on_pushButton_3_clicked()
-{
-    Jackchoose = "k";
-    ui->pushButton_2->hide();
-    ui->pushButton_3->hide();
-    ui->pushButton_4->hide();
-    ui->pushButton_5->hide();
-    move = 1;
-    ui->label_2->setText("Enemy turn");
-    ui->label_2->setStyleSheet("font-family: 'Segoe UI'; font-size: 8pt; border: 1px solid; border-color: rgb(192,192,192);  border-radius: 3px;  color: white; font: bold;");
-    secMove = 0;
-    ui->label_3->setStyleSheet("border-image: url(:/img/PNG-cards-1.3/kresti.png);");
-    ui->label_3->show();
-}
-
-
-void MainWindow::on_pushButton_4_clicked()
-{
-    Jackchoose = "b";
-    ui->pushButton_2->hide();
-    ui->pushButton_3->hide();
-    ui->pushButton_4->hide();
-    ui->pushButton_5->hide();
-    move = 1;
-    ui->label_2->setText("Enemy turn");
-    ui->label_2->setStyleSheet("font-family: 'Segoe UI'; font-size: 8pt; border: 1px solid; border-color: rgb(192,192,192);  border-radius: 3px;  color: white; font: bold;");
-    secMove = 0;
-    ui->label_3->setStyleSheet("border-image: url(:/img/PNG-cards-1.3/bybna.png);");
-    ui->label_3->show();
-}
-
-
-void MainWindow::on_pushButton_5_clicked()
-{
-    Jackchoose = "p";
-    ui->pushButton_2->hide();
-    ui->pushButton_3->hide();
-    ui->pushButton_4->hide();
-    ui->pushButton_5->hide();
-    move = 1;
-    ui->label_2->setText("Enemy turn");
-    ui->label_2->setStyleSheet("font-family: 'Segoe UI'; font-size: 8pt; border: 1px solid; border-color: rgb(192,192,192);  border-radius: 3px;  color: white; font: bold;");
-    secMove = 0;
-    ui->label_3->setStyleSheet("border-image: url(:/img/PNG-cards-1.3/piki.png);");
-    ui->label_3->show();
-}
-
-
-void MainWindow::on_pushButton_6_clicked()
-{
-    window->hide();
-    ui->pushButton_6->hide();
-    ui->pushButton_7->hide();
-    ui->pushButton_8->hide();
-    ui->pushButton_9->hide();
-    ui->label_9->hide();
-    ui->label_10->hide();
-    ui->line->hide();
-    ui->line_2->hide();
-
     ui->label_5->setText(QString::fromStdString("Points: " + std::to_string(playerPoints)));
     ui->label_6->setText(QString::fromStdString("Points: " + std::to_string(botPoints)));
     ui->label->setVisible(true);
@@ -1530,25 +1217,16 @@ void MainWindow::on_pushButton_6_clicked()
             ui->label_3->show();
         }
     }
-    ui->label_12->show();
-    if(QSMode)
-        ui->label_11->show();
-    if(PointsMode)
-        ui->label_12->setText("225");
-    else
-        ui->label_12->setText("125");
     secondmove();
     operation(mv);
 
     timer = new QTimer();
     connect(timer, SIGNAL(timeout()), this, SLOT(botMove()));
     timer->start(2000);
-
-    AutoSave();
 }
 
 
-void MainWindow::on_pushButton_8_clicked()
+void MainWindow::on_actionQuit_2_triggered()
 {
     QMessageBox::StandardButton reply = QMessageBox::question(this, "Quit", "Are you sure?", QMessageBox::Yes | QMessageBox::No);
     if(reply == QMessageBox::Yes){
@@ -1556,215 +1234,74 @@ void MainWindow::on_pushButton_8_clicked()
     }
 }
 
-void MainWindow::on_pushButton_9_clicked()
+
+void MainWindow::on_pushButton_clicked()
 {
-    window->hide();
-    ui->pushButton_6->hide();
-    ui->pushButton_7->hide();
-    ui->pushButton_8->hide();
-    ui->pushButton_9->hide();
-    ui->label_9->hide();
-    ui->label_10->hide();
-    ui->line->hide();
-    ui->line_2->hide();
-
-    ui->label_5->setText(QString::fromStdString("Points: " + std::to_string(playerPoints)));
-    ui->label_6->setText(QString::fromStdString("Points: " + std::to_string(botPoints)));
-    ui->label->setVisible(true);
-    ui->label_2->setVisible(true);
-    ui->label_5->setVisible(true);
-    ui->label_6->setVisible(true);
-    ui->label_7->setVisible(true);
-    Set = 1;
-    ui->label_8->setText(QString::fromStdString("Set: " + std::to_string(Set)));
-    ui->label_8->setVisible(true);
-
-    for(int i = 0; i < botCardsSize; i++){
-        delete botButtons[i];
-        botCards[i] = "";
-    }
-    for(int i = 0; i < playerCardsSize; i++){
-        delete playerButtons[i];
-        playerCards[i] = "";
-    }
-    for(int i = 0; i < ColodCardsSize; i++){
-        delete ColodButtons[i];
-        ColodCards[i] = "";
-    }
-    for(int i = 0; i < tableCardsSize; i++){
-        delete TableButtons[i];
-        tableCards[i] = "";
-    }
-
-    playerCardsSize = 0;
-    botCardsSize = 0;
-    ColodCardsSize = 0;
-    tableCardsSize = 0;
-    playerPoints = 0;
-    botPoints = 0;
-
+    move = 1;
+    secMove = 0;
+    checkForTake = 0;
+    BcheckForTake = 0;
+    ui->label_2->setText("Enemy turn");
     ui->pushButton->hide();
+}
+
+
+void MainWindow::on_pushButton_2_clicked()
+{
+    Jackchoose = "c";
     ui->pushButton_2->hide();
     ui->pushButton_3->hide();
     ui->pushButton_4->hide();
     ui->pushButton_5->hide();
-    ui->label_3->hide();
-    ui->label_4->hide();
-
-    checkForTake = 0;
-    BcheckForTake = 0;
-
-    PointsX = 1;
-    ui->label_7->setText(QString::fromStdString("Points " + std::to_string(PointsX) + "x"));
-
-    pJackKol = 0;
-    bJackKol = 0;
-
-    std::ifstream fin;
-    fin.open("GameData.txt");
-
-    if(fin.is_open()){
-
-        std::string bucket;
-        fin >> bucket;
-
-        fin >> playerCardsSize;
-        for(int i=0; i < playerCardsSize; i++){
-            fin >> playerCards[i];
-            onAddWidgetPlayer(playerCards[i], i);
-        }
-
-        fin >> botCardsSize;
-        for(int i=0; i < botCardsSize; i++){
-            fin >> botCards[i];
-            onAddWidgetBot(i);
-        }
-
-        fin >> ColodCardsSize;
-        ui->label->setText(QString::fromStdString(std::to_string(ColodCardsSize)));
-        for(int i=0; i < ColodCardsSize; i++){
-            fin >> ColodCards[i];
-            onAddWidgetColod(i);
-        }
-
-        fin >> tableCardsSize;
-        for(int i=0; i < tableCardsSize; i++){
-            fin >> tableCards[i];
-            onAddWidgetTable(tableCards[i], i);
-        }
-
-        fin >> move;
-        if(!move){
-            ui->label_2->setText("Your turn");
-            ui->label_2->setStyleSheet("font-family: 'Segoe UI'; font-size: 8pt; border: 1px solid; border-color: rgb(46, 80, 200);  border-radius: 3px; background-color: rgb(0,81,80); color: white; font: bold;");
-        }
-        else{
-            ui->label_2->setText("Enemy turn");
-            ui->label_2->setStyleSheet("font-family: 'Segoe UI'; font-size: 8pt; border: 1px solid; border-color: rgb(192,192,192);  border-radius: 3px; color: white; font: bold;");
-        }
-        fin >> secMove;
-        fin >> Jackchoose;
-        if(Jackchoose == "empty")
-            Jackchoose = "";
-        fin >> checkForTake;
-        fin >> BcheckForTake;
-        fin >> playerPoints;
-        ui->label_5->setText(QString::fromStdString("Points: " + std::to_string(playerPoints)));
-        fin >> botPoints;
-        ui->label_6->setText(QString::fromStdString("Points: " + std::to_string(botPoints)));
-        fin >> PointsX;
-        ui->label_7->setText(QString::fromStdString("Points " + std::to_string(PointsX) + "x"));
-        fin >> pJackKol;
-        fin >> bJackKol;
-        fin >> Set;
-        ui->label_8->setText(QString::fromStdString("Set: " + std::to_string(Set)));
-
-        bool cheaker;
-        fin >> cheaker;
-
-        if(cheaker)
-            ui->pushButton->show();
-        else
-            ui->pushButton->hide();
-
-        fin >> cheaker;
-
-        if(cheaker){
-            ui->pushButton_2->show();
-            ui->pushButton_3->show();
-            ui->pushButton_4->show();
-            ui->pushButton_5->show();
-        }
-        else{
-            ui->pushButton_2->hide();
-            ui->pushButton_3->hide();
-            ui->pushButton_4->hide();
-            ui->pushButton_5->hide();
-        }
-
-        fin >> cheaker;
-         if(cheaker){
-             if(Jackchoose == "c"){
-                 ui->label_3->setStyleSheet("border-image: url(:/img/PNG-cards-1.3/chirva.png);");
-             }
-             if(Jackchoose == "k"){
-                 ui->label_3->setStyleSheet("border-image: url(:/img/PNG-cards-1.3/kresti.png);");
-             }
-             if(Jackchoose == "b"){
-                 ui->label_3->setStyleSheet("border-image: url(:/img/PNG-cards-1.3/bybna.png);");
-             }
-             if(Jackchoose == "p"){
-                 ui->label_3->setStyleSheet("border-image: url(:/img/PNG-cards-1.3/piki.png);");
-             }
-             ui->label_3->show();
-         }
-         fin >> QSMode;
-         fin >> PointsMode;
-    }
-    fin.close();
-
-    ui->label_12->show();
-    if(QSMode)
-        ui->label_11->show();
-    if(PointsMode)
-        ui->label_12->setText("225");
-    else
-        ui->label_12->setText("125");
-
-    timer = new QTimer();
-    connect(timer, SIGNAL(timeout()), this, SLOT(botMove()));
-    timer->start(2000);
+    move = 1;
+    ui->label_2->setText("Enemy turn");
+    secMove = 0;
+    ui->label_3->setStyleSheet("border-image: url(:/img/PNG-cards-1.3/chirva.png);");
+    ui->label_3->show();
 }
 
-void MainWindow::on_pushButton_7_clicked()
+
+void MainWindow::on_pushButton_3_clicked()
 {
-    window->hide();
-    window->setWindowTitle("Options");
-    window->setWindowIcon(QIcon(":/img/PNG-cards-1.3/kindpng_4637727.png"));
-    window->show();
+    Jackchoose = "k";
+    ui->pushButton_2->hide();
+    ui->pushButton_3->hide();
+    ui->pushButton_4->hide();
+    ui->pushButton_5->hide();
+    move = 1;
+    ui->label_2->setText("Enemy turn");
+    secMove = 0;
+    ui->label_3->setStyleSheet("border-image: url(:/img/PNG-cards-1.3/kresti.png);");
+    ui->label_3->show();
 }
 
-void MainWindow::QSMslot(QString text)
+
+void MainWindow::on_pushButton_4_clicked()
 {
-    if(text == "On"){
-        QSMode = true;
-        OptionsSave();
-    }
-    else{
-        QSMode = false;
-        OptionsSave();
-    }
+    Jackchoose = "b";
+    ui->pushButton_2->hide();
+    ui->pushButton_3->hide();
+    ui->pushButton_4->hide();
+    ui->pushButton_5->hide();
+    move = 1;
+    ui->label_2->setText("Enemy turn");
+    secMove = 0;
+    ui->label_3->setStyleSheet("border-image: url(:/img/PNG-cards-1.3/bybna.png);");
+    ui->label_3->show();
 }
 
-void MainWindow::Pointsslot(QString text)
+
+void MainWindow::on_pushButton_5_clicked()
 {
-    if(text == "225"){
-        PointsMode = true;
-        OptionsSave();
-    }
-    else{
-        PointsMode = false;
-        OptionsSave();
-    }
+    Jackchoose = "p";
+    ui->pushButton_2->hide();
+    ui->pushButton_3->hide();
+    ui->pushButton_4->hide();
+    ui->pushButton_5->hide();
+    move = 1;
+    ui->label_2->setText("Enemy turn");
+    secMove = 0;
+    ui->label_3->setStyleSheet("border-image: url(:/img/PNG-cards-1.3/piki.png);");
+    ui->label_3->show();
 }
 

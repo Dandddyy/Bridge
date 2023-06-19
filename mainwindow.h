@@ -1,6 +1,7 @@
 #ifndef MAINWINDOW_H
 #define MAINWINDOW_H
 
+#include "optionwindow.h"
 #include <QtWidgets/QMainWindow>
 #include <QPushButton>
 #include <cstdlib>
@@ -46,13 +47,13 @@ public:
 
     void Start();
 
+    void AutoSave();
+
+    void OptionsSave();
+
 private slots:
 
     void botMove();
-
-    void on_actionStart_the_game_triggered();
-
-    void on_actionQuit_2_triggered();
 
     void on_pushButton_clicked();
 
@@ -63,6 +64,18 @@ private slots:
     void on_pushButton_4_clicked();
 
     void on_pushButton_5_clicked();
+
+    void on_pushButton_6_clicked();
+
+    void on_pushButton_8_clicked();
+
+    void on_pushButton_9_clicked();
+
+    void on_pushButton_7_clicked();
+
+    void QSMslot(QString text);
+
+    void Pointsslot(QString text);
 
 private:
     Ui::MainWindow *ui;
@@ -102,5 +115,11 @@ private:
     int bJackKol;
     QTimer *timer;
     int Set;
+    optionwindow *window;
+    bool QSMode;
+    bool PointsMode;
+
+signals:
+    void QSMsignal2(bool, bool);
 };
 #endif // MAINWINDOW_H
