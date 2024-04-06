@@ -16,12 +16,16 @@ public:
     ~optionwindow();
 
 public slots:
-    void QSMslot2(bool b, bool a);
+    void QSMslot2(bool b, bool a, int mvol, int svol);
 
 private slots:
     void on_comboBox_currentIndexChanged(int index);
 
     void on_comboBox_2_currentIndexChanged(int index);
+
+    void on_horizontalSlider_valueChanged(int value);
+
+    void on_horizontalSlider_2_valueChanged(int value);
 
 private:
     Ui::optionwindow *ui;
@@ -29,6 +33,8 @@ private:
 signals:
     void QSMsignal(QString);
     void Pointssignal(QString);
+    void Musicsignal(int);
+    void Soundsignal(int);
 };
 
 #endif // OPTIONWINDOW_H

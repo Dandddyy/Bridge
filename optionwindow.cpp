@@ -8,7 +8,10 @@ optionwindow::optionwindow(QWidget *parent) :
     ui->setupUi(this);
 
     ui->textEdit->setReadOnly(true);
-
+    ui->horizontalSlider->setMaximum(100);
+    ui->horizontalSlider->setMinimum(0);
+    ui->horizontalSlider_2->setMaximum(100);
+    ui->horizontalSlider_2->setMinimum(0);
 }
 
 optionwindow::~optionwindow()
@@ -22,7 +25,7 @@ void optionwindow::on_comboBox_currentIndexChanged(int index)
     emit QSMsignal(QSM);
 }
 
-void optionwindow::QSMslot2(bool b, bool a)
+void optionwindow::QSMslot2(bool b, bool a, int mvol, int svol)
 {
     if(b)
         ui->comboBox->setCurrentIndex(1);
@@ -36,6 +39,15 @@ void optionwindow::QSMslot2(bool b, bool a)
         ui->comboBox_2->setCurrentIndex(0);
         ui->label_4->setText("Game over if someone has more than 125 points. 125 nullified.");
     }
+    if(mvol >= 0 && mvol <= 100){
+        ui->horizontalSlider->setValue(mvol);
+        ui->horizontalSlider_2->setValue(svol);
+    }
+    else{
+        ui->horizontalSlider->setValue(50);
+        ui->horizontalSlider_2->setValue(50);
+    }
+
 }
 
 
@@ -48,5 +60,18 @@ void optionwindow::on_comboBox_2_currentIndexChanged(int index)
         ui->label_4->setText("Game over if someone has more than 125 points. 125 nullified.");
 
     emit Pointssignal(PointsMode);
+}
+
+void optionwindow::on_horizontalSlider_valueChanged(int value)
+{
+    ui->label_6->setText(QString::number(value));
+    emit Musicsignal(value);
+}
+
+
+void optionwindow::on_horizontalSlider_2_valueChanged(int value)
+{
+    ui->label_8->setText(QString::number(value));
+    emit Soundsignal(value);
 }
 

@@ -2,6 +2,7 @@
 #include <QMessageBox>
 #include "ui_mainwindow.h"
 #include <fstream>
+#include <QUrl>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -13,8 +14,14 @@ MainWindow::MainWindow(QWidget *parent)
 
     ui->pushButton_9->hide();
 
+    QString saveDir = QCoreApplication::applicationDirPath() + "/Saves";
+    QDir().mkpath(saveDir);
+
+    dirGame = saveDir + "/GameData.txt";
+    dirOption = saveDir + "/OptionsData.txt";
+
     std::ifstream fin;
-    fin.open("GameData.txt");
+    fin.open(dirGame.toStdString());
     if(fin.is_open()){
         std::string getstr;
         fin >> getstr;
@@ -29,18 +36,22 @@ MainWindow::MainWindow(QWidget *parent)
 
     connect(this, &MainWindow::QSMsignal2, window, &optionwindow::QSMslot2);
 
-    fin.open("OptionsData.txt");
+    fin.open(dirOption.toStdString());
     if(fin.is_open()){
         fin >> QSMode;
         fin >> PointsMode;
+        fin >> musicvol;
+        fin >> soundvol;
         if(QSMode == 0 || QSMode == 1){
-            emit QSMsignal2(QSMode, PointsMode);
+            emit QSMsignal2(QSMode, PointsMode, musicvol, soundvol);
         }
-        else{
-            QSMode = false;
-            PointsMode = false;
-        }
-
+    }
+    else{
+        QSMode = false;
+        PointsMode = false;
+        musicvol = 50;
+        soundvol = 50;
+        emit QSMsignal2(QSMode, PointsMode, musicvol, soundvol);
     }
     fin.close();
 
@@ -93,12 +104,359 @@ MainWindow::MainWindow(QWidget *parent)
 
     connect(window, &optionwindow::QSMsignal, this, &MainWindow::QSMslot);
     connect(window, &optionwindow::Pointssignal, this, &MainWindow::Pointsslot);
+    connect(window, &optionwindow::Musicsignal, this, &MainWindow::Musicslot);
+    connect(window, &optionwindow::Soundsignal, this, &MainWindow::Soundslot);
+
+    tempFilePathMenu = QStandardPaths::writableLocation(QStandardPaths::TempLocation) + "/MenuMusic.mp3";
+    QFileInfo checkFile1(tempFilePathMenu);
+    if (!checkFile1.exists() || !checkFile1.isFile()) {
+        QFile resourceFile(":/sd/Sound/MenuMusic.mp3");
+        resourceFile.copy(tempFilePathMenu);
+    }
+
+    QString soundDir = QCoreApplication::applicationDirPath() + "/Sound";
+    QDir().mkpath(soundDir);
+
+    tempFilePathTheme = soundDir + "/MainTheme.mp3";
+    QFileInfo checkFile2(tempFilePathTheme);
+    if (!checkFile2.exists() || !checkFile2.isFile()) {
+        QFile resourceFile(":/sd/Sound/MainTheme.mp3");
+        resourceFile.copy(tempFilePathTheme);
+    }
+
+    tempFilePathClick = soundDir + "/click.wav";
+    QFileInfo checkFile3(tempFilePathClick);
+    if (!checkFile3.exists() || !checkFile3.isFile()) {
+        QFile resourceFile(":/sd/Sound/click.wav");
+        resourceFile.copy(tempFilePathClick);
+    }
+
+    tempFilePathCard = soundDir + "/card.wav";
+    QFileInfo checkFile4(tempFilePathCard);
+    if (!checkFile4.exists() || !checkFile4.isFile()) {
+        QFile resourceFile(":/sd/Sound/card.wav");
+        resourceFile.copy(tempFilePathCard);
+    }
+
+    player = new QMediaPlayer;
+    audioOutput = new QAudioOutput;
+    player->setAudioOutput(audioOutput);
+    player->setSource(QUrl::fromLocalFile(tempFilePathMenu));
+    audioOutput->setVolume(musicvol / 100.0);
+    player->setLoops(-1);
+    player->play();
+
+    soundplayer = new QSoundEffect;
+    soundplayer->setVolume(soundvol / 100.0);
 
 }
 
 MainWindow::~MainWindow()
 {
     delete ui;
+}
+
+class GameState {
+private:
+    bool move;
+    bool secMove;
+    std::vector<std::string> botCard;
+    int opponentCardsCount;
+    std::string tableCard;
+    std::string jackChoose;
+    int discardedByBot;
+    int discardedByBotScore;
+    int initialOpponentCardsCount;
+    bool QSMode;
+
+public:
+    GameState(bool move, bool QSMode, bool secMove, std::vector<std::string> botCard, int opponentCardsCount,
+              std::string tableCard, std::string jackChoose, int discardedByBot,
+              int discardedByBotScore, int initialOpponentCardsCount)
+        : move(move), QSMode(QSMode), secMove(secMove), botCard(botCard), opponentCardsCount(opponentCardsCount), tableCard(tableCard),
+        jackChoose(jackChoose), discardedByBot(discardedByBot),
+        discardedByBotScore(discardedByBotScore), initialOpponentCardsCount(initialOpponentCardsCount) {}
+
+    std::vector<std::string> getPossibleMoves() {
+        std::vector<std::string> moves;
+        if(!secMove){
+            for(int i = 0; i < botCard.size(); i++){
+                if(jackChoose == ""){
+                    if(tableCard[1] == botCard[i][1] || tableCard[0] == botCard[i][0]){
+                        moves.push_back(botCard[i]);
+                    }
+                }
+                else{
+                    if(jackChoose[0] == botCard[i][1] || tableCard[0] == botCard[i][0]){
+                        moves.push_back(botCard[i]);
+                    }
+                }
+            }
+        }
+        else{
+            for(int i = 0; i < botCard.size(); i++){
+                if(tableCard[0] == botCard[i][0]){
+                    moves.push_back(botCard[i]);
+                }
+            }
+        }
+
+        return moves;
+    }
+
+    GameState simulateMove(std::string moveStd) {
+        tableCard = moveStd;
+        qDebug() << "botSize before: " << botCard.size() << "\n";
+        botCard.erase(std::remove(botCard.begin(), botCard.end(), moveStd), botCard.end());
+        qDebug() << "botSize after: " << botCard.size() << "\n";
+        qDebug() << "tableCard: " << tableCard << "\n";
+
+        if(botCard.size() > 0 || tableCard[0] == '6'){
+            secondMove();
+            operation();
+        }
+
+        return GameState(move, QSMode, secMove, botCard, opponentCardsCount, tableCard, jackChoose,
+                        discardedByBot + 1, discardedByBotScore, initialOpponentCardsCount);
+    }
+
+    void secondMove(){
+        secMove = 0;
+        move = 0;
+        if(tableCard[0] == '6'){
+            move = 1;
+        }
+        else{
+            for(int i = 0; i < botCard.size(); i++){
+                if(botCard[i][0] == tableCard[0]){
+                    secMove = 1;
+                    move = 1;
+                }
+            }
+        }
+    }
+
+    void operation(){
+        if(tableCard == "Qp" && QSMode == true){
+            secMove = 0;
+            move = 1;
+            opponentCardsCount += 5;
+            discardedByBotScore += 50;
+        }
+        else if(tableCard[0] == 'Q'){
+            discardedByBotScore += 10;
+        }
+        else {
+            char card = tableCard[0];
+
+            switch (card) {
+            case 'A':
+                secMove = 0;
+                move = 1;
+                break;
+
+            case '8':
+                secMove = 0;
+                move = 1;
+                opponentCardsCount += 2;
+                break;
+
+            case '7':
+                opponentCardsCount += 1;
+                break;
+
+            case 'J':
+                discardedByBotScore += -1;
+                break;
+
+            case 'K':
+            case '1':
+                discardedByBotScore += 10;
+                break;
+            }
+        }
+    }
+
+    int cardsDiscardedByBot() const { return discardedByBot; }
+    int cardsDiscardedByBotScore() const { return discardedByBotScore; }
+    int opponentCardCountChange() const { return initialOpponentCardsCount - opponentCardsCount; }
+    bool getMove() const { return move; }
+};
+
+int evaluateState(const GameState& state) {
+    const int cardDiscardedWeight = 15;
+    const int opponentCardCountWeight = 10;
+
+    int score = 0;
+    score += (cardDiscardedWeight * state.cardsDiscardedByBot()) + state.cardsDiscardedByBotScore();
+    score += opponentCardCountWeight * state.opponentCardCountChange();
+
+    return score;
+}
+
+int minimax(GameState state) {
+    if (state.getMove() == 0) {
+        qDebug() << "getMve:" << state.getMove() << "\n";
+        return evaluateState(state);
+    }
+
+    std::vector<std::string> possibleMoves = state.getPossibleMoves();
+
+    int bestValue = INT_MIN;
+
+    if(possibleMoves.empty()){
+        return evaluateState(state);
+    }
+    else{
+        for (std::string move : possibleMoves) {
+            GameState newState = state.simulateMove(move);
+            bestValue = std::max(bestValue, minimax(newState));
+        }
+    }
+    return bestValue;
+}
+
+void MainWindow::chooseBestMove() {
+
+    if(move){
+
+        std::vector<std::string> vector(botCards, botCards + botCardsSize);
+
+        GameState state = GameState(move, QSMode, secMove, vector, playerCardsSize,
+                                    tableCards[tableCardsSize - 1], Jackchoose, 0, 0, playerCardsSize);
+
+        std::vector<std::string> possibleMoves = state.getPossibleMoves();
+        std::string bestMove = "";
+        int bestValue = INT_MIN;
+
+        if(possibleMoves.empty() && BcheckForTake == 0){
+            onRemoveWidgetColodBot();
+            if(tableCards[tableCardsSize - 1][0] == '6'){
+                BcheckForTake = 0;
+            }
+        }
+        else if(possibleMoves.empty()){
+            secMove = 0;
+            move = 0;
+            ui->label_2->setText("Your turn");
+            ui->label_2->setStyleSheet("font-family: 'Segoe UI'; font-size: 8pt; border: 1px solid; border-color: rgb(46, 80, 200);  border-radius: 3px; background-color: rgb(0,81,80); color: white; font: bold;");
+            BcheckForTake = 0;
+            checkForTake = 0;
+        }
+        else{
+            bool mv;
+            int it = 0;
+
+            for (std::string moveS : possibleMoves) {
+                qDebug() << "moveS: " << moveS <<"\n";
+                GameState newState = state.simulateMove(moveS);
+                int moveValue = minimax(newState);
+                qDebug() << "possibleMoves.size: " << possibleMoves.size() << ", moveVal:" << moveValue << "\n";
+                if (moveValue > bestValue) {
+                    bestValue = moveValue;
+                    bestMove = moveS;
+                }
+            }
+
+            for(int i = 0; i < botCardsSize; i++){
+                if(bestMove == botCards[i]){
+                    it = i;
+                    qDebug() << "it: " << it << ", i:" << i << "\n";
+                }
+            }
+
+            qDebug() << "----------------------------------\n";
+
+            soundplayer->stop();
+            soundplayer->setSource(QUrl::fromLocalFile(tempFilePathCard));
+            soundplayer->setVolume(soundvol / 100.0);
+            soundplayer->play();
+
+            if(bestMove[0] == 'J'){
+                bJackKol++;
+
+                int sign[4];
+                sign[0] = 0;
+                sign[1] = 0;
+                sign[2] = 0;
+                sign[3] = 0;
+
+                for(int i = 0; i < botCardsSize; i++){
+                    if(botCards[i][0] != 'J'){
+                        if(botCards[i][1] == 'c'){
+                            sign[0]++;
+                        }
+                        else if(botCards[i][1] == 'k'){
+                            sign[1]++;
+                        }
+                        else if(botCards[i][1] == 'b'){
+                            sign[2]++;
+                        }
+                        else if(botCards[i][1] == 'p'){
+                            sign[3]++;
+                        }
+                    }
+                }
+                int k = 0;
+                for(int i = 0; i < 4; i++){
+                    if(sign[k] < sign[i]){
+                        k = i;
+                    }
+                }
+                if(k == 0){
+                    Jackchoose = "c";
+                    ui->label_3->setStyleSheet("border-image: url(:/img/PNG-cards-1.3/chirva.png);");
+                    ui->label_3->show();
+                }
+                else if(k == 1){
+                    Jackchoose = "k";
+                    ui->label_3->setStyleSheet("border-image: url(:/img/PNG-cards-1.3/kresti.png);");
+                    ui->label_3->show();
+                }
+                else if(k == 2){
+                    Jackchoose = "b";
+                    ui->label_3->setStyleSheet("border-image: url(:/img/PNG-cards-1.3/bybna.png);");
+                    ui->label_3->show();
+                }
+                else if(k == 3){
+                    Jackchoose = "p";
+                    ui->label_3->setStyleSheet("border-image: url(:/img/PNG-cards-1.3/piki.png);");
+                    ui->label_3->show();
+                }
+            }
+            else{
+                bJackKol = 0;
+                Jackchoose = "";
+            }
+
+            tableCards[tableCardsSize] = botCards[it];
+            onAddWidgetTable(tableCards[tableCardsSize], tableCardsSize);
+            tableCardsSize++;
+            delete botButtons[it];
+            botCards[it] = "";
+            for(int j = it; j < botCardsSize - 1; j++){
+                onAddWidgetBot(j);
+                delete botButtons[j + 1];
+                botCards[j] = botCards[j + 1];
+                botCards[j + 1] = "";
+            }
+            botCardsSize--;
+            if(botCardsSize > 0 || tableCards[tableCardsSize - 1][0] == '6'){
+                mv = move;
+                secondmove();
+                operation(mv);
+            }
+            if(tableCards[tableCardsSize - 1][0] != '6'){
+                gameEnd();
+            }
+        }
+        AutoSave();
+
+        timer->start(1000);
+    }
+    else{
+        timer->start(2000);
+    }
 }
 
 void MainWindow::botMove()
@@ -378,7 +736,7 @@ void MainWindow::botMove()
                 ui->label_3->hide();
             }
             else if(BcheckForTake == 0){
-                onRemoveWidgetColod();
+                onRemoveWidgetColodBot();
                 if(tableCards[tableCardsSize - 1][0] == '6'){
                     BcheckForTake = 0;
                 }
@@ -451,6 +809,10 @@ void MainWindow::botMove()
             }
         }
         if(finalmoveSize > 0 && finalmove[0] < botCardsSize){
+            soundplayer->stop();
+            soundplayer->setSource(QUrl::fromLocalFile(tempFilePathCard));
+            soundplayer->setVolume(soundvol / 100.0);
+            soundplayer->play();
             if(botCards[finalmove[finalmoveSize - 1]][0] == 'J'){
                 bJackKol++;
             }
@@ -573,6 +935,10 @@ void MainWindow::onRemoveWidgetPlayer()
             check = possibleMove(playerCards[i], "0" + Jackchoose, 0);
         }
         if(button == playerButtons[i] && move == 0 && check == true){
+            soundplayer->stop();
+            soundplayer->setSource(QUrl::fromLocalFile(tempFilePathCard));
+            soundplayer->setVolume(soundvol / 100.0);
+            soundplayer->play();
             Jackchoose = "";
             maincheck = true;
             ui->pushButton->hide();
@@ -625,6 +991,12 @@ void MainWindow::onRemoveWidgetColod()
             if(ColodCardsSize == 0){
                 shuffling();
             }
+
+            soundplayer->stop();
+            soundplayer->setSource(QUrl::fromLocalFile(tempFilePathCard));
+            soundplayer->setVolume(soundvol / 100.0);
+            soundplayer->play();
+
             playerCards[playerCardsSize] = ColodCards[ColodCardsSize - 1];
             onAddWidgetPlayer(playerCards[playerCardsSize], playerCardsSize);
             playerCardsSize++;
@@ -643,11 +1015,20 @@ void MainWindow::onRemoveWidgetColod()
             }
         }
     }
-    else if(move == 1 && BcheckForTake == 0){
+}
+
+void MainWindow::onRemoveWidgetColodBot(){
+    if(move == 1 && BcheckForTake == 0){
         if(tableCards[tableCardsSize - 1][0] == '6' || secMove == 0){
             if(ColodCardsSize == 0){
                 shuffling();
             }
+
+            soundplayer->stop();
+            soundplayer->setSource(QUrl::fromLocalFile(tempFilePathCard));
+            soundplayer->setVolume(soundvol / 100.0);
+            soundplayer->play();
+
             botCards[botCardsSize] = ColodCards[ColodCardsSize - 1];
             onAddWidgetBot(botCardsSize);
             botCardsSize++;
@@ -670,6 +1051,11 @@ void MainWindow::onRemoveWidgetColod()
 
 void MainWindow::shuffling()
 {
+    soundplayer->stop();
+    soundplayer->setSource(QUrl::fromLocalFile(tempFilePathCard));
+    soundplayer->setVolume(soundvol / 100.0);
+    soundplayer->play();
+
     delete ColodButtons[0];
 
     for(int i = 0; i < tableCardsSize - 1; i++){
@@ -710,6 +1096,9 @@ void MainWindow::gameEnd()
                 else if(botCards[i][0] == 'J'){
                     botPoints += (20 * PointsX);
                 }
+                else if(QSMode && botCards[i] == "Qp"){
+                    botPoints += (50 * PointsX);
+                }
                 else if(botCards[i][0] == 'K' || botCards[i][0] == 'Q' || botCards[i][0] == '1'){
                     botPoints += (10 * PointsX);
                 }
@@ -725,6 +1114,9 @@ void MainWindow::gameEnd()
                 }
                 else if(playerCards[i][0] == 'J'){
                     playerPoints += (20 * PointsX);
+                }
+                else if(QSMode && playerCards[i] == "Qp"){
+                    playerPoints += (50 * PointsX);
                 }
                 else if(playerCards[i][0] == 'K' || playerCards[i][0] == 'Q' || playerCards[i][0] == '1'){
                     playerPoints += (10 * PointsX);
@@ -806,7 +1198,7 @@ void MainWindow::gameEnd()
             ui->line->show();
             ui->line_2->show();
             std::ofstream fout;
-            fout.open("GameData.txt");
+            fout.open(dirGame.toStdString());
             fout.close();
             ui->pushButton_6->setGeometry(338, 160, 251, 71);
         }
@@ -825,7 +1217,7 @@ void MainWindow::gameEnd()
             ui->line->show();
             ui->line_2->show();
             std::ofstream fout;
-            fout.open("GameData.txt");
+            fout.open(dirGame.toStdString());
             fout.close();
             ui->pushButton_6->setGeometry(338, 160, 251, 71);
         }
@@ -954,6 +1346,9 @@ void MainWindow::operation(bool mv)
             ui->pushButton->hide();
             for(int i = 0; i < 5; i++){
                 if(ColodCardsSize == 0){
+                    if(i != 0){
+                        onAddWidgetColod(0);
+                    }
                     shuffling();
                 }
                 botCards[botCardsSize] = ColodCards[ColodCardsSize - 1];
@@ -970,64 +1365,82 @@ void MainWindow::operation(bool mv)
             }
             ui->label->setText(QString::fromStdString(std::to_string(ColodCardsSize)));
         }
-        else if(tableCards[tableCardsSize - 1][0] == 'A'){
-            secMove = 0;
-            move = 0;
-            ui->label_2->setText("Your turn");
-            ui->label_2->setStyleSheet("font-family: 'Segoe UI'; font-size: 8pt; border: 1px solid; border-color: rgb(46, 80, 200);  border-radius: 3px; background-color: rgb(0,81,80); color: white; font: bold;");
-            ui->pushButton->hide();
-        }
-        else if(tableCards[tableCardsSize - 1][0] == '8'){
-            if(ColodCardsSize == 0){
-                shuffling();
-            }
-            secMove = 0;
-            move = 0;
-            ui->label_2->setText("Your turn");
-            ui->label_2->setStyleSheet("font-family: 'Segoe UI'; font-size: 8pt; border: 1px solid; border-color: rgb(46, 80, 200);  border-radius: 3px; background-color: rgb(0,81,80); color: white; font: bold;");
-            ui->pushButton->hide();
-            botCards[botCardsSize] = ColodCards[ColodCardsSize - 1];
-            onAddWidgetBot(botCardsSize);
-            botCardsSize++;
-            ColodCards[ColodCardsSize - 1] = "";
-            delete ColodButtons[ColodCardsSize - 1];
-            ColodCardsSize--;
-            if(ColodCardsSize == 0){
-                onAddWidgetColod(0);
-                ui->label_4->setText(QString::fromStdString("^ \nShuffling (" + std::to_string(PointsX + 1) + "x)"));
-                ui->label_4->show();
-            }
-            if(ColodCardsSize == 0){
-                shuffling();
-            }
-            botCards[botCardsSize] = ColodCards[ColodCardsSize - 1];
-            onAddWidgetBot(botCardsSize);
-            botCardsSize++;
-            ColodCards[ColodCardsSize - 1] = "";
-            delete ColodButtons[ColodCardsSize - 1];
-            ColodCardsSize--;
-            ui->label->setText(QString::fromStdString(std::to_string(ColodCardsSize)));
-            if(ColodCardsSize == 0){
-                onAddWidgetColod(0);
-                ui->label_4->setText(QString::fromStdString("^ \nShuffling (" + std::to_string(PointsX + 1) + "x)"));
-                ui->label_4->show();
-            }
-        }
-        else if(tableCards[tableCardsSize - 1][0] == '7'){
-            if(ColodCardsSize == 0){
-                shuffling();
-            }
-            botCards[botCardsSize] = ColodCards[ColodCardsSize - 1];
-            onAddWidgetBot(botCardsSize);
-            botCardsSize++;
-            ColodCards[ColodCardsSize - 1] = "";
-            delete ColodButtons[ColodCardsSize - 1];
-            ColodCardsSize--;
-            ui->label->setText(QString::fromStdString(std::to_string(ColodCardsSize)));
-            if(ColodCardsSize == 0){
-                onAddWidgetColod(0);
-                ui->label_4->setText(QString::fromStdString("^ \nShuffling (" + std::to_string(PointsX + 1) + "x)"));
-                ui->label_4->show();
+        else {
+            char card = tableCards[tableCardsSize - 1][0];
+
+            switch (card) {
+            case 'A':
+                secMove = 0;
+                move = 0;
+                ui->label_2->setText("Your turn");
+                ui->label_2->setStyleSheet("font-family: 'Segoe UI'; font-size: 8pt; border: 1px solid; border-color: rgb(46, 80, 200);  border-radius: 3px; background-color: rgb(0,81,80); color: white; font: bold;");
+                ui->pushButton->hide();
+                break;
+
+            case '8':
+                if (ColodCardsSize == 0) {
+                    shuffling();
+                }
+
+                secMove = 0;
+                move = 0;
+                ui->label_2->setText("Your turn");
+                ui->label_2->setStyleSheet("font-family: 'Segoe UI'; font-size: 8pt; border: 1px solid; border-color: rgb(46, 80, 200);  border-radius: 3px; background-color: rgb(0,81,80); color: white; font: bold;");
+                ui->pushButton->hide();
+
+                botCards[botCardsSize] = ColodCards[ColodCardsSize - 1];
+                onAddWidgetBot(botCardsSize);
+                botCardsSize++;
+                ColodCards[ColodCardsSize - 1] = "";
+                delete ColodButtons[ColodCardsSize - 1];
+                ColodCardsSize--;
+
+                if (ColodCardsSize == 0) {
+                    onAddWidgetColod(0);
+                    ui->label_4->setText(QString::fromStdString("^ \nShuffling (" + std::to_string(PointsX + 1) + "x)"));
+                    ui->label_4->show();
+                }
+
+                if (ColodCardsSize == 0) {
+                    shuffling();
+                }
+
+                botCards[botCardsSize] = ColodCards[ColodCardsSize - 1];
+                onAddWidgetBot(botCardsSize);
+                botCardsSize++;
+                ColodCards[ColodCardsSize - 1] = "";
+                delete ColodButtons[ColodCardsSize - 1];
+                ColodCardsSize--;
+
+                ui->label->setText(QString::fromStdString(std::to_string(ColodCardsSize)));
+
+                if (ColodCardsSize == 0) {
+                    onAddWidgetColod(0);
+                    ui->label_4->setText(QString::fromStdString("^ \nShuffling (" + std::to_string(PointsX + 1) + "x)"));
+                    ui->label_4->show();
+                }
+                break;
+
+            case '7':
+                if (ColodCardsSize == 0) {
+                    shuffling();
+                }
+
+                botCards[botCardsSize] = ColodCards[ColodCardsSize - 1];
+                onAddWidgetBot(botCardsSize);
+                botCardsSize++;
+                ColodCards[ColodCardsSize - 1] = "";
+                delete ColodButtons[ColodCardsSize - 1];
+                ColodCardsSize--;
+
+                ui->label->setText(QString::fromStdString(std::to_string(ColodCardsSize)));
+
+                if (ColodCardsSize == 0) {
+                    onAddWidgetColod(0);
+                    ui->label_4->setText(QString::fromStdString("^ \nShuffling (" + std::to_string(PointsX + 1) + "x)"));
+                    ui->label_4->show();
+                }
+                break;
             }
         }
     }
@@ -1040,6 +1453,9 @@ void MainWindow::operation(bool mv)
             BcheckForTake = 0;
             for(int i = 0; i < 5; i++){
                 if(ColodCardsSize == 0){
+                    if(i != 0){
+                        onAddWidgetColod(0);
+                    }
                     shuffling();
                 }
                 playerCards[playerCardsSize] = ColodCards[ColodCardsSize - 1];
@@ -1056,66 +1472,85 @@ void MainWindow::operation(bool mv)
             }
             ui->label->setText(QString::fromStdString(std::to_string(ColodCardsSize)));
         }
-        else if(tableCards[tableCardsSize - 1][0] == 'A'){
-            secMove = 0;
-            move = 1;
-            ui->label_2->setText("Enemy turn");
-            ui->label_2->setStyleSheet("font-family: 'Segoe UI'; font-size: 8pt; border: 1px solid; border-color: rgb(192,192,192);  border-radius: 3px;  color: white; font: bold;");
-            BcheckForTake = 0;
-        }
-        else if(tableCards[tableCardsSize - 1][0] == '8'){
-            if(ColodCardsSize == 0){
-                shuffling();
+        else {
+            char card = tableCards[tableCardsSize - 1][0];
+
+            switch (card) {
+            case 'A':
+                secMove = 0;
+                move = 1;
+                ui->label_2->setText("Enemy turn");
+                ui->label_2->setStyleSheet("font-family: 'Segoe UI'; font-size: 8pt; border: 1px solid; border-color: rgb(192,192,192);  border-radius: 3px;  color: white; font: bold;");
+                BcheckForTake = 0;
+                break;
+
+            case '8':
+                if (ColodCardsSize == 0) {
+                    shuffling();
+                }
+
+                BcheckForTake = 0;
+                secMove = 0;
+                move = 1;
+                ui->label_2->setText("Enemy turn");
+                ui->label_2->setStyleSheet("font-family: 'Segoe UI'; font-size: 8pt; border: 1px solid; border-color: rgb(192,192,192);  border-radius: 3px;  color: white; font: bold;");
+
+                playerCards[playerCardsSize] = ColodCards[ColodCardsSize - 1];
+                onAddWidgetPlayer(playerCards[playerCardsSize], playerCardsSize);
+                playerCardsSize++;
+                ColodCards[ColodCardsSize - 1] = "";
+                delete ColodButtons[ColodCardsSize - 1];
+                ColodCardsSize--;
+
+                if (ColodCardsSize == 0) {
+                    onAddWidgetColod(0);
+                    ui->label_4->setText(QString::fromStdString("^ \nShuffling (" + std::to_string(PointsX + 1) + "x)"));
+                    ui->label_4->show();
+                }
+
+                if (ColodCardsSize == 0) {
+                    shuffling();
+                }
+
+                playerCards[playerCardsSize] = ColodCards[ColodCardsSize - 1];
+                onAddWidgetPlayer(playerCards[playerCardsSize], playerCardsSize);
+                playerCardsSize++;
+                ColodCards[ColodCardsSize - 1] = "";
+                delete ColodButtons[ColodCardsSize - 1];
+                ColodCardsSize--;
+
+                ui->label->setText(QString::fromStdString(std::to_string(ColodCardsSize)));
+
+                if (ColodCardsSize == 0) {
+                    onAddWidgetColod(0);
+                    ui->label_4->setText(QString::fromStdString("^ \nShuffling (" + std::to_string(PointsX + 1) + "x)"));
+                    ui->label_4->show();
+                }
+                break;
+
+            case '7':
+                if (ColodCardsSize == 0) {
+                    shuffling();
+                }
+
+                playerCards[playerCardsSize] = ColodCards[ColodCardsSize - 1];
+                onAddWidgetPlayer(playerCards[playerCardsSize], playerCardsSize);
+                playerCardsSize++;
+                ColodCards[ColodCardsSize - 1] = "";
+                delete ColodButtons[ColodCardsSize - 1];
+                ColodCardsSize--;
+
+                std::string kol = std::to_string(ColodCardsSize);
+                ui->label->setText(QString::fromStdString(kol));
+
+                if (ColodCardsSize == 0) {
+                    onAddWidgetColod(0);
+                    ui->label_4->setText(QString::fromStdString("^ \nShuffling (" + std::to_string(PointsX + 1) + "x)"));
+                    ui->label_4->show();
+                }
+                break;
             }
-            BcheckForTake = 0;
-            secMove = 0;
-            move = 1;
-            ui->label_2->setText("Enemy turn");
-            ui->label_2->setStyleSheet("font-family: 'Segoe UI'; font-size: 8pt; border: 1px solid; border-color: rgb(192,192,192);  border-radius: 3px;  color: white; font: bold;");
-            playerCards[playerCardsSize] = ColodCards[ColodCardsSize - 1];
-            onAddWidgetPlayer(playerCards[playerCardsSize], playerCardsSize);
-            playerCardsSize++;
-            ColodCards[ColodCardsSize - 1] = "";
-            delete ColodButtons[ColodCardsSize - 1];
-            ColodCardsSize--;
-            if(ColodCardsSize == 0){
-                onAddWidgetColod(0);
-                ui->label_4->setText(QString::fromStdString("^ \nShuffling (" + std::to_string(PointsX + 1) + "x)"));
-                ui->label_4->show();
-            }
-            if(ColodCardsSize == 0){
-                shuffling();
-            }
-            playerCards[playerCardsSize] = ColodCards[ColodCardsSize - 1];
-            onAddWidgetPlayer(playerCards[playerCardsSize], playerCardsSize);
-            playerCardsSize++;
-            ColodCards[ColodCardsSize - 1] = "";
-            delete ColodButtons[ColodCardsSize - 1];
-            ColodCardsSize--;
-            ui->label->setText(QString::fromStdString(std::to_string(ColodCardsSize)));
-            if(ColodCardsSize == 0){
-                onAddWidgetColod(0);
-                ui->label_4->setText(QString::fromStdString("^ \nShuffling (" + std::to_string(PointsX + 1) + "x)"));
-                ui->label_4->show();
-            }
-        }
-        else if(tableCards[tableCardsSize - 1][0] == '7'){
-            if(ColodCardsSize == 0){
-                shuffling();
-            }
-            playerCards[playerCardsSize] = ColodCards[ColodCardsSize - 1];
-            onAddWidgetPlayer(playerCards[playerCardsSize], playerCardsSize);
-            playerCardsSize++;
-            ColodCards[ColodCardsSize - 1] = "";
-            delete ColodButtons[ColodCardsSize - 1];
-            ColodCardsSize--;
-            std::string kol = std::to_string(ColodCardsSize);
-            ui->label->setText(QString::fromStdString(kol));
-            if(ColodCardsSize == 0){
-                onAddWidgetColod(0);
-                ui->label_4->setText(QString::fromStdString("^ \nShuffling (" + std::to_string(PointsX + 1) + "x)"));
-                ui->label_4->show();
-            }
+
         }
     }
 }
@@ -1277,7 +1712,7 @@ void MainWindow::AutoSave()
 {
     if(playerCardsSize > 0 && botCardsSize > 0){
         std::ofstream fout;
-        fout.open("GameData.txt");
+        fout.open(dirGame.toStdString());
 
         if(fout.is_open()){
 
@@ -1330,17 +1765,23 @@ void MainWindow::AutoSave()
 void MainWindow::OptionsSave()
 {
     std::ofstream fout;
-    fout.open("OptionsData.txt");
+    fout.open(dirOption.toStdString());
 
     if(fout.is_open()){
         fout << QSMode << "\n";
-        fout << PointsMode;
+        fout << PointsMode << "\n";
+        fout << musicvol << "\n";
+        fout << soundvol;
     }
     fout.close();
 }
 
 void MainWindow::on_pushButton_clicked()
 {
+    soundplayer->stop();
+    soundplayer->setSource(QUrl::fromLocalFile(tempFilePathClick));
+    soundplayer->setVolume(soundvol / 100.0);
+    soundplayer->play();
     move = 1;
     secMove = 0;
     checkForTake = 0;
@@ -1353,6 +1794,10 @@ void MainWindow::on_pushButton_clicked()
 
 void MainWindow::on_pushButton_2_clicked()
 {
+    soundplayer->stop();
+    soundplayer->setSource(QUrl::fromLocalFile(tempFilePathClick));
+    soundplayer->setVolume(soundvol / 100.0);
+    soundplayer->play();
     Jackchoose = "c";
     ui->pushButton_2->hide();
     ui->pushButton_3->hide();
@@ -1369,6 +1814,10 @@ void MainWindow::on_pushButton_2_clicked()
 
 void MainWindow::on_pushButton_3_clicked()
 {
+    soundplayer->stop();
+    soundplayer->setSource(QUrl::fromLocalFile(tempFilePathClick));
+    soundplayer->setVolume(soundvol / 100.0);
+    soundplayer->play();
     Jackchoose = "k";
     ui->pushButton_2->hide();
     ui->pushButton_3->hide();
@@ -1385,6 +1834,10 @@ void MainWindow::on_pushButton_3_clicked()
 
 void MainWindow::on_pushButton_4_clicked()
 {
+    soundplayer->stop();
+    soundplayer->setSource(QUrl::fromLocalFile(tempFilePathClick));
+    soundplayer->setVolume(soundvol / 100.0);
+    soundplayer->play();
     Jackchoose = "b";
     ui->pushButton_2->hide();
     ui->pushButton_3->hide();
@@ -1401,6 +1854,10 @@ void MainWindow::on_pushButton_4_clicked()
 
 void MainWindow::on_pushButton_5_clicked()
 {
+    soundplayer->stop();
+    soundplayer->setSource(QUrl::fromLocalFile(tempFilePathClick));
+    soundplayer->setVolume(soundvol / 100.0);
+    soundplayer->play();
     Jackchoose = "p";
     ui->pushButton_2->hide();
     ui->pushButton_3->hide();
@@ -1417,6 +1874,16 @@ void MainWindow::on_pushButton_5_clicked()
 
 void MainWindow::on_pushButton_6_clicked()
 {
+    soundplayer->stop();
+    soundplayer->setSource(QUrl::fromLocalFile(tempFilePathClick));
+    soundplayer->setVolume(soundvol / 100.0);
+    soundplayer->play();
+    player->stop();
+    player->setSource(QUrl::fromLocalFile(tempFilePathTheme));
+    audioOutput->setVolume(musicvol / 100.0);
+    player->setLoops(-1);
+    player->play();
+
     window->hide();
     ui->pushButton_6->hide();
     ui->pushButton_7->hide();
@@ -1541,7 +2008,7 @@ void MainWindow::on_pushButton_6_clicked()
     operation(mv);
 
     timer = new QTimer();
-    connect(timer, SIGNAL(timeout()), this, SLOT(botMove()));
+    connect(timer, SIGNAL(timeout()), this, SLOT(chooseBestMove()));
     timer->start(2000);
 
     AutoSave();
@@ -1550,6 +2017,10 @@ void MainWindow::on_pushButton_6_clicked()
 
 void MainWindow::on_pushButton_8_clicked()
 {
+    soundplayer->stop();
+    soundplayer->setSource(QUrl::fromLocalFile(tempFilePathClick));
+    soundplayer->setVolume(soundvol / 100.0);
+    soundplayer->play();
     QMessageBox::StandardButton reply = QMessageBox::question(this, "Quit", "Are you sure?", QMessageBox::Yes | QMessageBox::No);
     if(reply == QMessageBox::Yes){
         QApplication::quit();
@@ -1558,6 +2029,16 @@ void MainWindow::on_pushButton_8_clicked()
 
 void MainWindow::on_pushButton_9_clicked()
 {
+    soundplayer->stop();
+    soundplayer->setSource(QUrl::fromLocalFile(tempFilePathClick));
+    soundplayer->setVolume(soundvol / 100.0);
+    soundplayer->play();
+    player->stop();
+    player->setSource(QUrl::fromLocalFile(tempFilePathTheme));
+    audioOutput->setVolume(musicvol / 100.0);
+    player->setLoops(-1);
+    player->play();
+
     window->hide();
     ui->pushButton_6->hide();
     ui->pushButton_7->hide();
@@ -1621,7 +2102,7 @@ void MainWindow::on_pushButton_9_clicked()
     bJackKol = 0;
 
     std::ifstream fin;
-    fin.open("GameData.txt");
+    fin.open(dirGame.toStdString());
 
     if(fin.is_open()){
 
@@ -1723,6 +2204,12 @@ void MainWindow::on_pushButton_9_clicked()
     }
     fin.close();
 
+    if(ColodCardsSize == 0){
+        onAddWidgetColod(0);
+        ui->label_4->setText(QString::fromStdString("^ \nShuffling (" + std::to_string(PointsX + 1) + "x)"));
+        ui->label_4->show();
+    }
+
     ui->label_12->show();
     if(QSMode)
         ui->label_11->show();
@@ -1732,12 +2219,16 @@ void MainWindow::on_pushButton_9_clicked()
         ui->label_12->setText("125");
 
     timer = new QTimer();
-    connect(timer, SIGNAL(timeout()), this, SLOT(botMove()));
+    connect(timer, SIGNAL(timeout()), this, SLOT(chooseBestMove()));
     timer->start(2000);
 }
 
 void MainWindow::on_pushButton_7_clicked()
 {
+    soundplayer->stop();
+    soundplayer->setSource(QUrl::fromLocalFile(tempFilePathClick));
+    soundplayer->setVolume(soundvol / 100.0);
+    soundplayer->play();
     window->hide();
     window->setWindowTitle("Options");
     window->setWindowIcon(QIcon(":/img/PNG-cards-1.3/kindpng_4637727.png"));
@@ -1748,23 +2239,34 @@ void MainWindow::QSMslot(QString text)
 {
     if(text == "On"){
         QSMode = true;
-        OptionsSave();
     }
     else{
         QSMode = false;
-        OptionsSave();
     }
+    OptionsSave();
 }
 
 void MainWindow::Pointsslot(QString text)
 {
     if(text == "225"){
         PointsMode = true;
-        OptionsSave();
     }
     else{
         PointsMode = false;
-        OptionsSave();
     }
+    OptionsSave();
 }
 
+void MainWindow::Musicslot(int val)
+{
+    musicvol = val;
+    audioOutput->setVolume(musicvol / 100.0);
+    OptionsSave();
+}
+
+void MainWindow::Soundslot(int val)
+{
+    soundvol = val;
+    soundplayer->setVolume(soundvol / 100.0);
+    OptionsSave();
+}

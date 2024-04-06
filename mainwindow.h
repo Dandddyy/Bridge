@@ -4,12 +4,11 @@
 #include "optionwindow.h"
 #include <QtWidgets/QMainWindow>
 #include <QPushButton>
-#include <cstdlib>
-#include <ctime>
-#include <Windows.h>
 #include <QSignalMapper>
 #include <QTimer>
-
+#include <QMediaPlayer>
+#include <QtMultimedia>
+#include <vector>
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -35,6 +34,8 @@ public:
 
     void onRemoveWidgetColod();
 
+    void onRemoveWidgetColodBot();
+
     void shuffling();
 
     void gameEnd();
@@ -52,6 +53,8 @@ public:
     void OptionsSave();
 
 private slots:
+
+    void chooseBestMove();
 
     void botMove();
 
@@ -77,8 +80,13 @@ private slots:
 
     void Pointsslot(QString text);
 
+    void Musicslot(int val);
+
+    void Soundslot(int val);
+
 private:
     Ui::MainWindow *ui;
+
     const std::string links[4][9] = {
         {":/img/PNG-cards-1.3/6_of_hearts.png", ":/img/PNG-cards-1.3/7_of_hearts.png", ":/img/PNG-cards-1.3/8_of_hearts.png", ":/img/PNG-cards-1.3/9_of_hearts.png", ":/img/PNG-cards-1.3/10_of_hearts.png", ":/img/PNG-cards-1.3/jack_of_hearts2.png", ":/img/PNG-cards-1.3/queen_of_hearts2.png", ":/img/PNG-cards-1.3/king_of_hearts2.png", ":/img/PNG-cards-1.3/ace_of_hearts.png"},
         {":/img/PNG-cards-1.3/6_of_clubs.png", ":/img/PNG-cards-1.3/7_of_clubs.png", ":/img/PNG-cards-1.3/8_of_clubs.png", ":/img/PNG-cards-1.3/9_of_clubs.png", ":/img/PNG-cards-1.3/10_of_clubs.png", ":/img/PNG-cards-1.3/jack_of_clubs2.png", ":/img/PNG-cards-1.3/queen_of_clubs2.png", ":/img/PNG-cards-1.3/king_of_clubs2.png", ":/img/PNG-cards-1.3/ace_of_clubs.png"},
@@ -91,6 +99,7 @@ private:
         {"6b", "7b", "8b", "9b", "1b", "Jb", "Qb", "Kb", "Ab"},
         {"6p", "7p", "8p", "9p", "1p", "Jp", "Qp", "Kp", "Ap"}
     };
+
     std::string playerCards[36];
     int playerCardsSize;
     std::string botCards[36];
@@ -118,8 +127,20 @@ private:
     optionwindow *window;
     bool QSMode;
     bool PointsMode;
+    int musicvol;
+    int soundvol;
+    QString tempFilePathMenu;
+    QString tempFilePathTheme;
+    QString tempFilePathClick;
+    QString tempFilePathCard;
+    QString dirOption;
+    QString dirGame;
+
+    QMediaPlayer *player;
+    QAudioOutput *audioOutput;
+    QSoundEffect *soundplayer;
 
 signals:
-    void QSMsignal2(bool, bool);
+    void QSMsignal2(bool, bool, int, int);
 };
 #endif // MAINWINDOW_H
