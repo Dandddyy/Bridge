@@ -40,18 +40,20 @@ MainWindow::MainWindow(QWidget *parent)
     if(fin.is_open()){
         fin >> QSMode;
         fin >> PointsMode;
+        fin >> difficulty;
         fin >> musicvol;
         fin >> soundvol;
         if(QSMode == 0 || QSMode == 1){
-            emit QSMsignal2(QSMode, PointsMode, musicvol, soundvol);
+            emit QSMsignal2(QSMode, PointsMode, difficulty, musicvol, soundvol);
         }
     }
     else{
         QSMode = false;
         PointsMode = false;
+        difficulty = "Middle";
         musicvol = 50;
         soundvol = 50;
-        emit QSMsignal2(QSMode, PointsMode, musicvol, soundvol);
+        emit QSMsignal2(QSMode, PointsMode, difficulty, musicvol, soundvol);
     }
     fin.close();
 
@@ -79,6 +81,8 @@ MainWindow::MainWindow(QWidget *parent)
     ui->label_8->hide();
     ui->label_11->hide();
     ui->label_12->hide();
+    ui->label_13->hide();
+    ui->scrollArea->hide();
 
     checkForTake = 0;
     BcheckForTake = 0;
@@ -104,6 +108,7 @@ MainWindow::MainWindow(QWidget *parent)
 
     connect(window, &optionwindow::QSMsignal, this, &MainWindow::QSMslot);
     connect(window, &optionwindow::Pointssignal, this, &MainWindow::Pointsslot);
+    connect(window, &optionwindow::Difficultysignal, this, &MainWindow::Difficultyslot);
     connect(window, &optionwindow::Musicsignal, this, &MainWindow::Musicslot);
     connect(window, &optionwindow::Soundsignal, this, &MainWindow::Soundslot);
 
@@ -319,6 +324,7 @@ int minimax(GameState state) {
 void MainWindow::chooseBestMove() {
 
     if(move){
+        timer->start(1000);
 
         std::vector<std::string> vector(botCards, botCards + botCardsSize);
 
@@ -451,8 +457,6 @@ void MainWindow::chooseBestMove() {
             }
         }
         AutoSave();
-
-        timer->start(1000);
     }
     else{
         timer->start(2000);
@@ -462,6 +466,7 @@ void MainWindow::chooseBestMove() {
 void MainWindow::botMove()
 {
     if(move == 1){
+        timer->start(1000);
         bool mv;
         char JJ;
         int finalmove[9];
@@ -849,6 +854,9 @@ void MainWindow::botMove()
         }
         AutoSave();
     }
+    else{
+        timer->start(2000);
+    }
 }
 
 void MainWindow::onAddWidgetPlayer(std::string card, int iter)
@@ -871,6 +879,7 @@ void MainWindow::onAddWidgetPlayer(std::string card, int iter)
     playerButtons[iter]->setIconSize(s);
     playerButtons[iter]->setFixedSize(s);
     QObject::connect(playerButtons[iter], &QPushButton::clicked, this, &MainWindow::onRemoveWidgetPlayer);
+    ui->scrollAreaWidgetContents->setMinimumSize(QSize(70*playerCardsSize,0));
 }
 
 void MainWindow::onAddWidgetBot(int iter)
@@ -981,6 +990,9 @@ void MainWindow::onRemoveWidgetPlayer()
             gameEnd();
         }
     }
+
+    ui->scrollAreaWidgetContents->setMinimumSize(QSize(70*playerCardsSize,0));
+
     AutoSave();
 }
 
@@ -1014,6 +1026,10 @@ void MainWindow::onRemoveWidgetColod()
                 ui->label_4->show();
             }
         }
+
+        ui->scrollAreaWidgetContents->setMinimumSize(QSize(70*playerCardsSize,0));
+
+        AutoSave();
     }
 }
 
@@ -1178,6 +1194,8 @@ void MainWindow::gameEnd()
         ui->label_8->hide();
         ui->label_11->hide();
         ui->label_12->hide();
+        ui->label_13->hide();
+        ui->scrollArea->hide();
         ui->label_7->setText(QString::fromStdString("Points " + std::to_string(PointsX) + "x"));
 
         pJackKol = 0;
@@ -1193,6 +1211,8 @@ void MainWindow::gameEnd()
             ui->pushButton_8->show();
             ui->label_11->hide();
             ui->label_12->hide();
+            ui->label_13->hide();
+            ui->scrollArea->hide();
             ui->label_9->show();
             ui->label_10->show();
             ui->line->show();
@@ -1212,6 +1232,8 @@ void MainWindow::gameEnd()
             ui->pushButton_8->show();
             ui->label_11->hide();
             ui->label_12->hide();
+            ui->label_13->hide();
+            ui->scrollArea->hide();
             ui->label_9->show();
             ui->label_10->show();
             ui->line->show();
@@ -1222,6 +1244,7 @@ void MainWindow::gameEnd()
             ui->pushButton_6->setGeometry(338, 160, 251, 71);
         }
         else{
+            delete timer;
             QMessageBox::about(this, "Set", QString::fromStdString("Set!!!\nComputer points: " + std::to_string(botPoints) + "\nYour points: " + std::to_string(playerPoints)));
             ui->label_5->setText(QString::fromStdString("Points: " + std::to_string(playerPoints)));
             ui->label_6->setText(QString::fromStdString("Points: " + std::to_string(botPoints)));
@@ -1236,6 +1259,8 @@ void MainWindow::gameEnd()
                 ui->label_11->setVisible(true);
 
             ui->label_12->show();
+            ui->label_13->show();
+            ui->scrollArea->show();
 
             Set++;
             ui->label_8->setText(QString::fromStdString("Set: " + std::to_string(Set)));
@@ -1293,6 +1318,15 @@ void MainWindow::gameEnd()
             }
             secondmove();
             operation(mv);
+
+            timer = new QTimer();
+            if(difficulty == "Middle"){
+                connect(timer, SIGNAL(timeout()), this, SLOT(botMove()));
+            }
+            else if(difficulty == "Hard"){
+                connect(timer, SIGNAL(timeout()), this, SLOT(chooseBestMove()));
+            }
+            timer->start(2000);
         }
     }
 }
@@ -1550,8 +1584,8 @@ void MainWindow::operation(bool mv)
                 }
                 break;
             }
-
         }
+        ui->scrollAreaWidgetContents->setMinimumSize(QSize(70*playerCardsSize,0));
     }
 }
 
@@ -1756,7 +1790,8 @@ void MainWindow::AutoSave()
             fout << ui->pushButton_2->isVisible() << "\n";
             fout << ui->label_3->isVisible() << "\n";
             fout << QSMode << "\n";
-            fout << PointsMode;
+            fout << PointsMode << "\n";
+            fout << difficulty;
         }
         fout.close();
     }
@@ -1770,6 +1805,7 @@ void MainWindow::OptionsSave()
     if(fout.is_open()){
         fout << QSMode << "\n";
         fout << PointsMode << "\n";
+        fout << difficulty << "\n";
         fout << musicvol << "\n";
         fout << soundvol;
     }
@@ -1998,6 +2034,17 @@ void MainWindow::on_pushButton_6_clicked()
         }
     }
     ui->label_12->show();
+    ui->label_13->show();
+    ui->scrollArea->show();
+    ui->label_13->setText(QString::fromStdString(difficulty));
+    if(difficulty == "Middle"){
+        ui->label_13->setText("M");
+        ui->label_13->setStyleSheet("font: 900 11pt 'Segoe UI Black'; color: orange");
+    }
+    else if(difficulty == "Hard"){
+        ui->label_13->setText("H");
+        ui->label_13->setStyleSheet("font: 900 11pt 'Segoe UI Black'; color: red");
+    }
     if(QSMode)
         ui->label_11->show();
     if(PointsMode)
@@ -2008,7 +2055,12 @@ void MainWindow::on_pushButton_6_clicked()
     operation(mv);
 
     timer = new QTimer();
-    connect(timer, SIGNAL(timeout()), this, SLOT(chooseBestMove()));
+    if(difficulty == "Middle"){
+        connect(timer, SIGNAL(timeout()), this, SLOT(botMove()));
+    }
+    else if(difficulty == "Hard"){
+        connect(timer, SIGNAL(timeout()), this, SLOT(chooseBestMove()));
+    }
     timer->start(2000);
 
     AutoSave();
@@ -2201,6 +2253,7 @@ void MainWindow::on_pushButton_9_clicked()
          }
          fin >> QSMode;
          fin >> PointsMode;
+         fin >> difficulty;
     }
     fin.close();
 
@@ -2211,6 +2264,17 @@ void MainWindow::on_pushButton_9_clicked()
     }
 
     ui->label_12->show();
+    ui->label_13->show();
+    ui->scrollArea->show();
+    ui->label_13->setText(QString::fromStdString(difficulty));
+    if(difficulty == "Middle"){
+        ui->label_13->setText("M");
+        ui->label_13->setStyleSheet("font: 900 11pt 'Segoe UI Black'; color: orange");
+    }
+    else if(difficulty == "Hard"){
+        ui->label_13->setText("H");
+        ui->label_13->setStyleSheet("font: 900 11pt 'Segoe UI Black'; color: red");
+    }
     if(QSMode)
         ui->label_11->show();
     if(PointsMode)
@@ -2219,8 +2283,15 @@ void MainWindow::on_pushButton_9_clicked()
         ui->label_12->setText("125");
 
     timer = new QTimer();
-    connect(timer, SIGNAL(timeout()), this, SLOT(chooseBestMove()));
+    if(difficulty == "Middle"){
+        connect(timer, SIGNAL(timeout()), this, SLOT(botMove()));
+    }
+    else if(difficulty == "Hard"){
+        connect(timer, SIGNAL(timeout()), this, SLOT(chooseBestMove()));
+    }
     timer->start(2000);
+
+    ui->scrollAreaWidgetContents->setMinimumSize(QSize(70*playerCardsSize,0));
 }
 
 void MainWindow::on_pushButton_7_clicked()
@@ -2254,6 +2325,12 @@ void MainWindow::Pointsslot(QString text)
     else{
         PointsMode = false;
     }
+    OptionsSave();
+}
+
+void MainWindow::Difficultyslot(QString text)
+{
+    difficulty = text.toStdString();
     OptionsSave();
 }
 

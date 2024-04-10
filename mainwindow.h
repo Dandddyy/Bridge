@@ -80,6 +80,8 @@ private slots:
 
     void Pointsslot(QString text);
 
+    void Difficultyslot(QString text);
+
     void Musicslot(int val);
 
     void Soundslot(int val);
@@ -127,6 +129,7 @@ private:
     optionwindow *window;
     bool QSMode;
     bool PointsMode;
+    std::string difficulty;
     int musicvol;
     int soundvol;
     QString tempFilePathMenu;
@@ -141,6 +144,6 @@ private:
     QSoundEffect *soundplayer;
 
 signals:
-    void QSMsignal2(bool, bool, int, int);
+    void QSMsignal2(bool, bool, std::string, int, int);
 };
 #endif // MAINWINDOW_H
