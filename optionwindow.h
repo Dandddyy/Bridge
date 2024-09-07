@@ -16,7 +16,7 @@ public:
     ~optionwindow();
 
 public slots:
-    void QSMslot2(bool b, bool a, std::string diff, int mvol, int svol);
+    void QSMslot2(bool b, bool a, std::string diff, int mvol, int svol, bool isFullscreen);
 
 private slots:
     void on_comboBox_currentIndexChanged(int index);
@@ -29,6 +29,8 @@ private slots:
 
     void on_comboBox_3_currentIndexChanged(int index);
 
+    void on_comboBox_4_currentIndexChanged(int index);
+
 private:
     Ui::optionwindow *ui;
 
@@ -38,6 +40,7 @@ signals:
     void Difficultysignal(QString);
     void Musicsignal(int);
     void Soundsignal(int);
+    void Displaysignal(bool);
 };
 
 #endif // OPTIONWINDOW_H

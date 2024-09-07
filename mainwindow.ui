@@ -40,7 +40,7 @@ background-color: rgb(163, 3, 47);
      <rect>
       <x>10</x>
       <y>20</y>
-      <width>651</width>
+      <width>611</width>
       <height>101</height>
      </rect>
     </property>
@@ -193,7 +193,7 @@ background-color: rgb(163, 3, 47);
     font: bold;</string>
     </property>
     <property name="text">
-     <string>end</string>
+     <string>End</string>
     </property>
    </widget>
    <widget class="QPushButton" name="pushButton_2">
@@ -585,7 +585,9 @@ The Game</string>
      </rect>
     </property>
     <property name="styleSheet">
-     <string notr="true">font: 900 11pt &quot;Segoe UI Black&quot;;
+     <string notr="true">font-weight: 900;
+font-family: &quot;Segoe UI Black&quot;;
+font-size: 11pt;
 color: #c5c5c5</string>
     </property>
     <property name="text">
@@ -602,7 +604,9 @@ color: #c5c5c5</string>
      </rect>
     </property>
     <property name="styleSheet">
-     <string notr="true">font: 900 11pt &quot;Segoe UI Black&quot;;
+     <string notr="true">font-weight: 900;
+font-size: 11pt;
+font-family: &quot;Segoe UI Black&quot;;
 color: orange</string>
     </property>
     <property name="text">
@@ -685,6 +689,52 @@ color: orange</string>
      </widget>
     </widget>
    </widget>
+   <widget class="QPushButton" name="pushButton_10">
+    <property name="geometry">
+     <rect>
+      <x>630</x>
+      <y>20</y>
+      <width>31</width>
+      <height>31</height>
+     </rect>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">font-family: &quot;Segoe UI&quot;;
+    font-size: 8pt;
+    border: 1px solid;
+    border-color: rgb(192,192,192); 
+    border-radius: 10px; 
+ background-color: rgb(230,230,230);
+    color: black;
+    font: bold;</string>
+    </property>
+    <property name="text">
+     <string/>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="pushButton_11">
+    <property name="geometry">
+     <rect>
+      <x>630</x>
+      <y>60</y>
+      <width>31</width>
+      <height>31</height>
+     </rect>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">font-family: &quot;Segoe UI&quot;;
+    font-size: 8pt;
+    border: 1px solid;
+    border-color: rgb(192,192,192); 
+    border-radius: 10px; 
+ background-color: rgb(230,230,230);
+    color: black;
+    font: bold;</string>
+    </property>
+    <property name="text">
+     <string/>
+    </property>
+   </widget>
    <zorder>label_11</zorder>
    <zorder>label_12</zorder>
    <zorder>label_2</zorder>
@@ -713,6 +763,8 @@ color: orange</string>
    <zorder>pushButton_9</zorder>
    <zorder>label_13</zorder>
    <zorder>scrollArea</zorder>
+   <zorder>pushButton_10</zorder>
+   <zorder>pushButton_11</zorder>
   </widget>
  </widget>
  <resources/>

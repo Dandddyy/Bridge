@@ -8,7 +8,9 @@
 #include <QTimer>
 #include <QMediaPlayer>
 #include <QtMultimedia>
-#include <vector>
+#include <QScrollArea>
+#include <QEvent>
+#include <QWheelEvent>
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -52,6 +54,25 @@ public:
 
     void OptionsSave();
 
+    void Resizing(QString label2Str = "");
+
+    void WidgetsLocation(QSize windowSize);
+
+    void scaleWidget(QWidget* widget);
+
+    void scaleFontnRadiusWidget(QWidget* widget, int fontWidget, int borderRadius);
+
+    void setUiGeo();
+
+    void SaveWindowGeometry();
+
+    void closeEvent(QCloseEvent *event) override {
+        if (window->isVisible()) {
+            window->close();
+        }
+        QMainWindow::closeEvent(event);
+    }
+
 private slots:
 
     void chooseBestMove();
@@ -86,6 +107,15 @@ private slots:
 
     void Soundslot(int val);
 
+    void Displayslot(bool val);
+
+    void on_pushButton_10_clicked();
+
+    void on_pushButton_11_clicked();
+
+protected:
+    bool eventFilter(QObject *obj, QEvent *event) override;
+
 private:
     Ui::MainWindow *ui;
 
@@ -110,7 +140,7 @@ private:
     int ColodCardsSize;
     std::string tableCards[36];
     int tableCardsSize;
-    bool move;
+    bool Mmove;
     QPushButton* playerButtons[36];
     QPushButton* botButtons[36];
     QPushButton* ColodButtons[36];
@@ -132,18 +162,84 @@ private:
     std::string difficulty;
     int musicvol;
     int soundvol;
+    bool isFullscreen;
+    bool isInGame;
+    bool isFromSet;
+    bool isShuffl;
     QString tempFilePathMenu;
     QString tempFilePathTheme;
     QString tempFilePathClick;
     QString tempFilePathCard;
     QString dirOption;
     QString dirGame;
+    QString massBoxStyle = R"(
+        QMessageBox {
+            background-color: rgb(0,81,44);
+        }
+        QMessageBox QLabel {
+            color: white;
+            font-family: 'Segoe UI';
+            font-size: 11pt;
+        }
+        QPushButton {
+            width: 100px;
+            height: 25px;
+            font-family: 'Segoe UI';
+            font-size: 10pt;
+            border: 2px solid;
+            border-color: black;
+            border-radius: 20px;
+            padding: 6px;
+            margin: 4px;
+            background-color: white;
+            color: black;
+            font: bold;
+        })";
 
     QMediaPlayer *player;
     QAudioOutput *audioOutput;
     QSoundEffect *soundplayer;
+    double scaleFactor;
+    QPoint savedMainWindowPoint;
+    QSize savedMainWindowSize;
+    QRect savedlabel1Geo;
+    QRect savedlabel2Geo;
+    QRect savedlabel3Geo;
+    QRect savedlabel4Geo;
+    QRect savedlabel5Geo;
+    QRect savedlabel6Geo;
+    QRect savedlabel7Geo;
+    QRect savedlabel8Geo;
+    QRect savedlabel11Geo;
+    QRect savedlabel12Geo;
+    QRect savedlabel13Geo;
+    QRect savedButton1Geo;
+    QRect savedButton2Geo;
+    QRect savedButton3Geo;
+    QRect savedButton4Geo;
+    QRect savedButton5Geo;
+    QRect savedButton10Geo;
+    QRect savedButton11Geo;
+    QString savedLabelStyle;
+    QString savedLabel2Style;
+    QString savedLabel4Style;
+    QString savedLabel5Style;
+    QString savedLabel6Style;
+    QString savedLabel7Style;
+    QString savedLabel8Style;
+    QString savedLabel12Style;
+    QString savedButtonStyle;
+    QString savedButton10Style;
+    QString savedButton11Style;
+    QRect savedLayoutGeo;
+    QRect savedLayout2Geo;
+    QRect savedLayout3Geo;
+    QRect savedLayout4Geo;
+    QRect savedScroll;
+    QSize savedIcon10;
+    QSize savedIcon11;
 
 signals:
-    void QSMsignal2(bool, bool, std::string, int, int);
+    void QSMsignal2(bool, bool, std::string, int, int, bool);
 };
 #endif // MAINWINDOW_H
