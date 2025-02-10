@@ -421,7 +421,7 @@ Shuffling(2x)</string>
     font: bold;</string>
     </property>
     <property name="text">
-     <string>Start The Game</string>
+     <string>Play!</string>
     </property>
    </widget>
    <widget class="QLabel" name="label_9">

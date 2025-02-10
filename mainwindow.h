@@ -12,6 +12,9 @@
 #include <QEvent>
 #include <QWheelEvent>
 
+class Bot;
+class Human;
+
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
 QT_END_NAMESPACE
@@ -44,11 +47,11 @@ public:
 
     bool possibleMove(std::string p, std::string t, bool ndmove);
 
-    void operation(bool mv);
+    void operation(int mv);
 
     void secondmove();
 
-    void Start();
+    void Start(std::string (&playerCards)[36], int& playerCardsSize, std::string (&botCards)[36], int& botCardsSize);
 
     void AutoSave();
 
@@ -73,11 +76,46 @@ public:
         QMainWindow::closeEvent(event);
     }
 
+    int isMove() const { return Mmove; }
+
+    const std::string getJackchoose() const { return Jackchoose; }
+
+    void setJackchoose(std::string param) { Jackchoose =  param; }
+
+    void setTable(std::string param) {
+        tableCards[tableCardsSize] = param;
+        onAddWidgetTable(tableCards[tableCardsSize], tableCardsSize);
+        tableCardsSize++;
+    }
+
+    const std::string* getTable() const { return tableCards; }
+
+    int getTableSize() const { return tableCardsSize; }
+
+    bool isSecMove() const { return secMove; }
+
+    void hideLable3();
+
+    bool isQSM() const { return QSMode; }
+
+    void lable3Style(QString param);
+
+    void RemoveWidgetBot(int id) {
+        onRemoveWidgetColodBot();
+    }
+
+    void botNoChoice();
+
+    void playerMoveSound() {
+        soundplayer->stop();
+        soundplayer->setSource(QUrl::fromLocalFile(tempFilePathCard));
+        soundplayer->setVolume(soundvol / 100.0);
+        soundplayer->play();
+    }
+
+    int getPlayercardsSize() const;
+
 private slots:
-
-    void chooseBestMove();
-
-    void botMove();
 
     void on_pushButton_clicked();
 
@@ -113,6 +151,10 @@ private slots:
 
     void on_pushButton_11_clicked();
 
+    void hardBotMove();
+
+    void mediumBotMove();
+
 protected:
     bool eventFilter(QObject *obj, QEvent *event) override;
 
@@ -132,29 +174,21 @@ private:
         {"6p", "7p", "8p", "9p", "1p", "Jp", "Qp", "Kp", "Ap"}
     };
 
-    std::string playerCards[36];
-    int playerCardsSize;
-    std::string botCards[36];
-    int botCardsSize;
+    std::vector<Bot*> bots;
+    int botsCount;
+    std::vector<Human*> humans;
+    int humansCount;
     std::string ColodCards[36];
     int ColodCardsSize;
     std::string tableCards[36];
     int tableCardsSize;
-    bool Mmove;
-    QPushButton* playerButtons[36];
-    QPushButton* botButtons[36];
-    QPushButton* ColodButtons[36];
-    QPushButton* TableButtons[36];
+    int Mmove;
+    QPushButton* ColodButtons[36] = {nullptr};
+    QPushButton* TableButtons[36] = {nullptr};
     bool secMove;
     std::string Jackchoose;
-    bool checkForTake;
-    bool BcheckForTake;
-    int playerPoints;
-    int botPoints;
     int PointsX;
-    int pJackKol;
-    int bJackKol;
-    QTimer *timer;
+    QTimer* timer;
     int Set;
     optionwindow *window;
     bool QSMode;
