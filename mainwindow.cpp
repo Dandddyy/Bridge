@@ -682,14 +682,18 @@ void MainWindow::gameEnd()
         index++;
     }
     if(cheker){
+        bool checkForPass = false;
         for(Player* playe : players){
             if(!playe->isInGame()){
                 losers.push_back(playe);
             }
             else if(playe->getPass() > 0){
+                checkForPass = true;
                 endClicked(true);
             }
         }
+        if(!checkForPass || tableCards[tableCardsSize - 1][0] == '8' || tableCards[tableCardsSize - 1][0] == '7' || (tableCards[tableCardsSize - 1] == "Qp" && QSMode))
+            operation(Mmove);
         int pJackKol = players[index]->getJackKol();
         if(pJackKol != 0){
             players[index]->setPoints(players[index]->getPoints() - ((20 * pJackKol) * PointsX));
@@ -956,6 +960,20 @@ void MainWindow::gameEnd()
 
             secondmove();
             operation(mv);
+
+            if(isFullscreen){
+                QString curText = ui->label_6->text();
+                int newFontSize = 11 * scaleFactor;
+                QRegularExpression regex("font-size:\\s*\\d+pt");
+                curText.replace(regex, QString("font-size: %1pt").arg(newFontSize));
+                ui->label_6->setText(curText);
+                curText = ui->label_14->text();
+                curText.replace(regex, QString("font-size: %1pt").arg(newFontSize));
+                ui->label_14->setText(curText);
+                curText = ui->label_15->text();
+                curText.replace(regex, QString("font-size: %1pt").arg(newFontSize));
+                ui->label_15->setText(curText);
+            }
 
             timer = new QTimer();
             connect(timer, SIGNAL(timeout()), this, SLOT(botMove()));
