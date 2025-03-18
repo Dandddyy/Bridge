@@ -6,7 +6,7 @@
 class Human : public Player {
 
 public:
-    explicit Human(int id, MainWindow* mw) : Player(id, mw) {}
+    explicit Human(std::string name, MainWindow* mw) : Player(name, mw) {}
 
 
 };

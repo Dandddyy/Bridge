@@ -12,8 +12,7 @@
 #include <QEvent>
 #include <QWheelEvent>
 
-class Bot;
-class Human;
+class Player;
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -27,9 +26,13 @@ public:
     MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
 
-    void onAddWidgetPlayer(std::string card, int iter);
+    std::vector<Player*> &getPlayers() {
+        return players;
+    }
 
-    void onAddWidgetBot(int iter);
+    void onAddWidgetPlayer(Player* pl, std::string card, int iter);
+
+    void onAddWidgetBot(Player* pl, int iter);
 
     void onAddWidgetColod(int iter);
 
@@ -45,13 +48,15 @@ public:
 
     void gameEnd();
 
+    void cleaner();
+
     bool possibleMove(std::string p, std::string t, bool ndmove);
 
     void operation(int mv);
 
     void secondmove();
 
-    void Start(std::string (&playerCards)[36], int& playerCardsSize, std::string (&botCards)[36], int& botCardsSize);
+    void Start();
 
     void AutoSave();
 
@@ -68,6 +73,8 @@ public:
     void setUiGeo();
 
     void SaveWindowGeometry();
+
+    void scaleForMany();
 
     void closeEvent(QCloseEvent *event) override {
         if (window->isVisible()) {
@@ -115,6 +122,14 @@ public:
 
     int getPlayercardsSize() const;
 
+    void playerCreator();
+
+    void endClicked(bool end = false);
+
+    int nextOne(int mv);
+
+    int getPlayersCount() const { return playersCount; }
+
 private slots:
 
     void on_pushButton_clicked();
@@ -127,11 +142,7 @@ private slots:
 
     void on_pushButton_5_clicked();
 
-    void on_pushButton_6_clicked();
-
     void on_pushButton_8_clicked();
-
-    void on_pushButton_9_clicked();
 
     void on_pushButton_7_clicked();
 
@@ -151,9 +162,23 @@ private slots:
 
     void on_pushButton_11_clicked();
 
-    void hardBotMove();
+    void botMove();
 
-    void mediumBotMove();
+    void on_pushButton_12_clicked();
+
+    void on_pushButton_19_clicked();
+
+    void on_pushButton_15_clicked();
+
+    void on_pushButton_16_clicked();
+
+    void on_pushButton_17_clicked();
+
+    void on_pushButton_18_clicked();
+
+    void on_pushButton_20_clicked();
+
+    void on_lineEdit_textEdited(const QString &arg1);
 
 protected:
     bool eventFilter(QObject *obj, QEvent *event) override;
@@ -174,10 +199,8 @@ private:
         {"6p", "7p", "8p", "9p", "1p", "Jp", "Qp", "Kp", "Ap"}
     };
 
-    std::vector<Bot*> bots;
-    int botsCount;
-    std::vector<Human*> humans;
-    int humansCount;
+    std::vector<Player*> players;
+    int playersCount;
     std::string ColodCards[36];
     int ColodCardsSize;
     std::string tableCards[36];
@@ -206,6 +229,7 @@ private:
     QString tempFilePathCard;
     QString dirOption;
     QString dirGame;
+    QString dirName;
     QString massBoxStyle = R"(
         QMessageBox {
             background-color: rgb(0,81,44);
@@ -242,6 +266,8 @@ private:
     QRect savedlabel4Geo;
     QRect savedlabel5Geo;
     QRect savedlabel6Geo;
+    QRect savedlabel14Geo;
+    QRect savedlabel15Geo;
     QRect savedlabel7Geo;
     QRect savedlabel8Geo;
     QRect savedlabel11Geo;
@@ -259,6 +285,8 @@ private:
     QString savedLabel4Style;
     QString savedLabel5Style;
     QString savedLabel6Style;
+    QString savedLabel14Style;
+    QString savedLabel15Style;
     QString savedLabel7Style;
     QString savedLabel8Style;
     QString savedLabel12Style;
@@ -269,6 +297,8 @@ private:
     QRect savedLayout2Geo;
     QRect savedLayout3Geo;
     QRect savedLayout4Geo;
+    QRect savedVLayoutGeo;
+    QRect savedVLayout2Geo;
     QRect savedScroll;
     QSize savedIcon10;
     QSize savedIcon11;

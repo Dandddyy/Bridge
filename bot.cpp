@@ -2,6 +2,8 @@
 
 void Bot::botMove() {
 
+    bool checkForEnd = false;
+
     const std::string* table = mainWindow->getTable();
     const int tableSize = mainWindow->getTableSize();
 
@@ -275,7 +277,7 @@ void Bot::botMove() {
             mainWindow->hideLable3();
         }
         else if(checkForTake == 0){
-            mainWindow->RemoveWidgetBot(id);
+            mainWindow->RemoveWidgetBot(0);
             if(table[tableSize - 1][0] == '6'){
                 checkForTake = 0;
             }
@@ -349,11 +351,9 @@ void Bot::botMove() {
         }
         for(int i = 0; i < finalmoveSize; i++){
             mainWindow->setTable(cards[finalmove[i]]);
-            delete buttons[finalmove[i]];
+            delete buttons[cardsSize - 1];
             cards[finalmove[i]] = "";
             for(int j = finalmove[i]; j < cardsSize - 1; j++){
-                mainWindow->onAddWidgetBot(j);
-                delete buttons[j + 1];
                 cards[j] = cards[j + 1];
                 cards[j + 1] = "";
             }
@@ -364,16 +364,22 @@ void Bot::botMove() {
             }
             cardsSize--;
         }
-        if(cardsSize > 0 || table[tableSize - 1][0] == '6'){
+        const std::string* newtable = mainWindow->getTable();
+        const int newtableSize = mainWindow->getTableSize();
+        if(cardsSize > 0 || newtable[newtableSize - 1][0] == '6'){
+            checkForTake = 0;
             mv = mainWindow->isMove();
             mainWindow->secondmove();
             mainWindow->operation(mv);
         }
-        if(table[tableSize - 1][0] != '6'){
+        if(newtable[newtableSize - 1][0] != '6'){
+            checkForEnd = true;
             mainWindow->gameEnd();
         }
     }
-    mainWindow->AutoSave();
+    if(!checkForEnd){
+        mainWindow->AutoSave();
+    }
 }
 
 int Bot::evaluateState(const GameState& state) {
@@ -391,29 +397,33 @@ int Bot::evaluateState(const GameState& state) {
 }
 
 int Bot::minimax(const GameState& state) {
-    if (state.getMove() == 0) {
+    if (state.getMove() == 1) {
         qDebug() << "getMove:" << state.getMove() << "\n";
         return evaluateState(state);
     }
-
-    std::vector<std::string> possibleMoves = state.getPossibleMoves();
-
-    int bestValue = INT_MIN;
-
-    if(possibleMoves.empty()){
-        return evaluateState(state);
-    }
     else{
-        for (std::string move : possibleMoves) {
-            GameState newState = state;
-            newState = newState.simulateMove(move);
-            bestValue = std::max(bestValue, minimax(newState));
+
+        std::vector<std::string> possibleMoves = state.getPossibleMoves();
+
+        int bestValue = INT_MIN;
+
+        if(possibleMoves.empty()){
+            return evaluateState(state);
         }
+        else{
+            for (std::string move : possibleMoves) {
+                GameState newState = state;
+                newState = newState.simulateMove(move);
+                bestValue = std::max(bestValue, minimax(newState));
+            }
+        }
+        return bestValue;
     }
-    return bestValue;
 }
 
 void Bot::chooseBestMove() {
+
+    bool checkForEnd = false;
 
     const std::string* table = mainWindow->getTable();
     const int tableSize = mainWindow->getTableSize();
@@ -421,14 +431,15 @@ void Bot::chooseBestMove() {
     std::vector<std::string> vector(cards, cards + cardsSize);
 
     GameState state = GameState(mainWindow->isMove(), mainWindow->isQSM(), mainWindow->isSecMove(), vector, mainWindow->getPlayercardsSize(),
-                                table[tableSize - 1], mainWindow->getJackchoose(), 0, 0, mainWindow->getPlayercardsSize());
+                                table[tableSize - 1], mainWindow->getJackchoose(), 0, 0, mainWindow->getPlayercardsSize(),
+                                mainWindow->getPlayersCount(), passCount, jackKol);
 
     std::vector<std::string> possibleMoves = state.getPossibleMoves();
     std::string bestMove = "";
     int bestValue = INT_MIN;
 
     if(possibleMoves.empty() && checkForTake == 0){
-        mainWindow->RemoveWidgetBot(id);
+        mainWindow->RemoveWidgetBot(0);
         if(table[tableSize - 1][0] == '6'){
             checkForTake = 0;
         }
@@ -436,6 +447,7 @@ void Bot::chooseBestMove() {
     else if(possibleMoves.empty()){
         mainWindow->botNoChoice();
         checkForTake = 0;
+        jackKol = 0;
     }
     else{
         int mv;
@@ -457,89 +469,98 @@ void Bot::chooseBestMove() {
             }
         }
 
-        for(int i = 0; i < cardsSize; i++){
-            if(bestMove == cards[i]){
-                it = i;
-                qDebug() << "it: " << it << ", i:" << i << "\n";
-            }
-        }
-
-        qDebug() << "----------------------------------\n";
-
-        mainWindow->playerMoveSound();
-
-        if(bestMove[0] == 'J'){
-            jackKol++;
-
-            int sign[4];
-            sign[0] = 0;
-            sign[1] = 0;
-            sign[2] = 0;
-            sign[3] = 0;
-
+        if(bestMove != "click_end"){
             for(int i = 0; i < cardsSize; i++){
-                if(cards[i][0] != 'J'){
-                    if(cards[i][1] == 'c'){
-                        sign[0]++;
-                    }
-                    else if(cards[i][1] == 'k'){
-                        sign[1]++;
-                    }
-                    else if(cards[i][1] == 'b'){
-                        sign[2]++;
-                    }
-                    else if(cards[i][1] == 'p'){
-                        sign[3]++;
-                    }
+                if(bestMove == cards[i]){
+                    it = i;
+                    qDebug() << "it: " << it << ", i:" << i << "\n";
                 }
             }
-            int k = 0;
-            for(int i = 0; i < 4; i++){
-                if(sign[k] < sign[i]){
-                    k = i;
+
+            qDebug() << "----------------------------------\n";
+
+            mainWindow->playerMoveSound();
+
+            if(bestMove[0] == 'J'){
+                jackKol++;
+
+                int sign[4];
+                sign[0] = 0;
+                sign[1] = 0;
+                sign[2] = 0;
+                sign[3] = 0;
+
+                for(int i = 0; i < cardsSize; i++){
+                    if(cards[i][0] != 'J'){
+                        if(cards[i][1] == 'c'){
+                            sign[0]++;
+                        }
+                        else if(cards[i][1] == 'k'){
+                            sign[1]++;
+                        }
+                        else if(cards[i][1] == 'b'){
+                            sign[2]++;
+                        }
+                        else if(cards[i][1] == 'p'){
+                            sign[3]++;
+                        }
+                    }
+                }
+                int k = 0;
+                for(int i = 0; i < 4; i++){
+                    if(sign[k] < sign[i]){
+                        k = i;
+                    }
+                }
+                if(k == 0){
+                    mainWindow->setJackchoose("c");
+                    mainWindow->lable3Style("border-image: url(:/img/PNG-cards-1.3/chirva.png);");
+                }
+                else if(k == 1){
+                    mainWindow->setJackchoose("k");
+                    mainWindow->lable3Style("border-image: url(:/img/PNG-cards-1.3/kresti.png);");
+                }
+                else if(k == 2){
+                    mainWindow->setJackchoose("b");
+                    mainWindow->lable3Style("border-image: url(:/img/PNG-cards-1.3/bybna.png);");
+                }
+                else if(k == 3){
+                    mainWindow->setJackchoose("p");
+                    mainWindow->lable3Style("border-image: url(:/img/PNG-cards-1.3/piki.png);");
                 }
             }
-            if(k == 0){
-                mainWindow->setJackchoose("c");
-                mainWindow->lable3Style("border-image: url(:/img/PNG-cards-1.3/chirva.png);");
+            else{
+                jackKol = 0;
+                mainWindow->setJackchoose("");
+                mainWindow->hideLable3();
             }
-            else if(k == 1){
-                mainWindow->setJackchoose("k");
-                mainWindow->lable3Style("border-image: url(:/img/PNG-cards-1.3/kresti.png);");
+
+            mainWindow->setTable(cards[it]);
+            const std::string* newtable = mainWindow->getTable();
+            const int newtableSize = mainWindow->getTableSize();
+            delete buttons[cardsSize - 1];
+            cards[it] = "";
+            for(int j = it; j < cardsSize - 1; j++){
+                cards[j] = cards[j + 1];
+                cards[j + 1] = "";
             }
-            else if(k == 2){
-                mainWindow->setJackchoose("b");
-                mainWindow->lable3Style("border-image: url(:/img/PNG-cards-1.3/bybna.png);");
+            cardsSize--;
+            if(cardsSize > 0 || newtable[newtableSize - 1][0] == '6'){
+                checkForTake = 0;
+                mv = mainWindow->isMove();
+                mainWindow->secondmove();
+                mainWindow->operation(mv);
             }
-            else if(k == 3){
-                mainWindow->setJackchoose("p");
-                mainWindow->lable3Style("border-image: url(:/img/PNG-cards-1.3/piki.png);");
+            if(newtable[newtableSize - 1][0] != '6'){
+                checkForEnd = true;
+                mainWindow->gameEnd();
             }
         }
         else{
-            jackKol = 0;
-            mainWindow->setJackchoose("");
-            mainWindow->hideLable3();
-        }
-
-        mainWindow->setTable(cards[it]);
-        delete buttons[it];
-        cards[it] = "";
-        for(int j = it; j < cardsSize - 1; j++){
-            mainWindow->onAddWidgetBot(j);
-            delete buttons[j + 1];
-            cards[j] = cards[j + 1];
-            cards[j + 1] = "";
-        }
-        cardsSize--;
-        if(cardsSize > 0 || table[tableSize - 1][0] == '6'){
-            mv = mainWindow->isMove();
-            mainWindow->secondmove();
-            mainWindow->operation(mv);
-        }
-        if(table[tableSize - 1][0] != '6'){
-            mainWindow->gameEnd();
+            mainWindow->endClicked();
         }
     }
-    mainWindow->AutoSave();
+    if(!checkForEnd){
+        mainWindow->AutoSave();
+    }
 }

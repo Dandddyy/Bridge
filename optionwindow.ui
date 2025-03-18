@@ -232,6 +232,9 @@ color: lightgrey</string>
        <height>31</height>
       </rect>
      </property>
+     <property name="cursor">
+      <cursorShape>PointingHandCursor</cursorShape>
+     </property>
      <property name="layoutDirection">
       <enum>Qt::LeftToRight</enum>
      </property>
@@ -304,6 +307,9 @@ color: lightgrey</string>
        <height>31</height>
       </rect>
      </property>
+     <property name="cursor">
+      <cursorShape>PointingHandCursor</cursorShape>
+     </property>
      <property name="styleSheet">
       <string notr="true">QSlider::groove:horizontal {
     border: 1px solid #bbb;
@@ -371,6 +377,9 @@ QSlider::handle:horizontal:disabled {
        <width>101</width>
        <height>31</height>
       </rect>
+     </property>
+     <property name="cursor">
+      <cursorShape>PointingHandCursor</cursorShape>
      </property>
      <property name="layoutDirection">
       <enum>Qt::LeftToRight</enum>
@@ -456,6 +465,9 @@ QSlider::handle:horizontal:disabled {
        <width>160</width>
        <height>31</height>
       </rect>
+     </property>
+     <property name="cursor">
+      <cursorShape>PointingHandCursor</cursorShape>
      </property>
      <property name="styleSheet">
       <string notr="true">QSlider::groove:horizontal {
@@ -603,6 +615,9 @@ QSlider::handle:horizontal:disabled {
        <height>31</height>
       </rect>
      </property>
+     <property name="cursor">
+      <cursorShape>PointingHandCursor</cursorShape>
+     </property>
      <property name="layoutDirection">
       <enum>Qt::LeftToRight</enum>
      </property>
@@ -713,6 +728,9 @@ QSlider::handle:horizontal:disabled {
        <width>141</width>
        <height>31</height>
       </rect>
+     </property>
+     <property name="cursor">
+      <cursorShape>PointingHandCursor</cursorShape>
      </property>
      <property name="layoutDirection">
       <enum>Qt::LeftToRight</enum>

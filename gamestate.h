@@ -8,6 +8,7 @@
 class GameState {
 private:
     int Gmove;
+    bool QSMode;
     bool secMove;
     std::vector<std::string> botCard;
     int opponentCardsCount;
@@ -16,28 +17,30 @@ private:
     int discardedByBot;
     int discardedByBotScore;
     int initialOpponentCardsCount;
-    bool QSMode;
+    int playerCount;
+    int Pass;
+    int jackKol;
+
+    void secondMove();
+
+    void operation(int mv);
 
 public:
     GameState(int Gmove, bool QSMode, bool secMove, std::vector<std::string> botCard, int opponentCardsCount,
-              std::string tableCard, std::string jackChoose, int discardedByBot,
-              int discardedByBotScore, int initialOpponentCardsCount)
+              std::string tableCard, std::string jackChoose, int discardedByBot,int discardedByBotScore,
+              int initialOpponentCardsCount, int playerCount, int Pass, int jackKol)
         : Gmove(Gmove), QSMode(QSMode), secMove(secMove), botCard(botCard), opponentCardsCount(opponentCardsCount), tableCard(tableCard),
-        jackChoose(jackChoose), discardedByBot(discardedByBot),
-        discardedByBotScore(discardedByBotScore), initialOpponentCardsCount(initialOpponentCardsCount) {}
+        jackChoose(jackChoose), discardedByBot(discardedByBot), discardedByBotScore(discardedByBotScore),
+        initialOpponentCardsCount(initialOpponentCardsCount), playerCount(playerCount), Pass(Pass), jackKol(jackKol) {}
 
     std::vector<std::string> getPossibleMoves() const;
 
     GameState simulateMove(const std::string& moveStd);
 
-    void secondMove();
-
-    void operation();
-
     int cardsDiscardedByBot() const { return discardedByBot; }
     int cardsDiscardedByBotScore() const { return discardedByBotScore; }
     int opponentCardCountChange() const { return opponentCardsCount - initialOpponentCardsCount; }
-    bool getMove() const { return Gmove; }
+    int getMove() const { return Gmove; }
 };
 
 #endif // GAMESTATE_H

@@ -12,15 +12,19 @@ private:
 
 public:
 
-    explicit Bot(int id, MainWindow* mw) : Player(id, mw) {}
+    explicit Bot(std::string name, MainWindow* mw) : Player(name, mw) {}
 
-    void botMove();
+    void setDifficulty(std::string param) override { difficulty = param; }
+
+    std::string getDifficulty() override { return difficulty; }
+
+    void botMove() override;
 
     int evaluateState(const GameState& state);
 
     int minimax(const GameState& state);
 
-    void chooseBestMove();
+    void chooseBestMove() override;
 };
 
 #endif // BOT_H
