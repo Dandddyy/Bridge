@@ -115,6 +115,7 @@ void GameState::operation(int mv){
         jackKol = 0;
     }
     else if(tableCard[0] == 'Q'){
+        Pass = 0;
         discardedByBotScore += 10;
         jackKol = 0;
     }

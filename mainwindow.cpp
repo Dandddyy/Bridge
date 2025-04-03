@@ -28,10 +28,6 @@ MainWindow::MainWindow(QWidget *parent)
     dirName = saveDir + "/Name.txt";
     dirOption = saveDir + "/OptionsData.txt";
 
-    isInGame = false;
-    isFromSet = false;
-    isShuffl = false;
-
     setCentralWidget(ui->centralwidget);
 
     connect(this, &MainWindow::QSMsignal2, window, &optionwindow::QSMslot2);
@@ -72,6 +68,7 @@ MainWindow::MainWindow(QWidget *parent)
     ui->pushButton_3->hide();
     ui->pushButton_4->hide();
     ui->pushButton_5->hide();
+    ui->pushButton_6->hide();
     ui->pushButton_10->hide();
     ui->pushButton_11->hide();
     ui->label_3->hide();
@@ -191,7 +188,8 @@ MainWindow::~MainWindow()
     delete ui;
 }
 
-int MainWindow::getPlayercardsSize() const {
+int MainWindow::getPlayercardsSize() const
+{
     int playerSize = 32;
     for(Player* playe : players){
         if(playe->getCardsSize() < playerSize || playe->isInGame())
@@ -200,16 +198,19 @@ int MainWindow::getPlayercardsSize() const {
     return playerSize;
 }
 
-void MainWindow::hideLable3() {
+void MainWindow::hideLable3()
+{
     ui->label_3->hide();
 }
 
-void MainWindow::lable3Style(QString param) {
+void MainWindow::lable3Style(QString param)
+{
     ui->label_3->setStyleSheet(param);
     ui->label_3->show();
 }
 
-void MainWindow::botNoChoice() {
+void MainWindow::botNoChoice()
+{
     secMove = 0;
     Mmove = nextOne(Mmove);
     if(Mmove == 1){
@@ -230,7 +231,8 @@ void MainWindow::botNoChoice() {
     }
 }
 
-bool MainWindow::eventFilter(QObject *obj, QEvent *event) {
+bool MainWindow::eventFilter(QObject *obj, QEvent *event)
+{
     if (obj == ui->scrollArea && event->type() == QEvent::Wheel) {
         QWheelEvent *wheelEvent = static_cast<QWheelEvent *>(event);
 
@@ -248,7 +250,41 @@ bool MainWindow::eventFilter(QObject *obj, QEvent *event) {
     return QMainWindow::eventFilter(obj, event);
 }
 
-void MainWindow::botMove() {
+void MainWindow::pushButtonBridge()
+{
+    if(Bridge){
+        ui->pushButton->show();
+        ui->pushButton_6->show();
+        if(isFullscreen){
+            ui->pushButton_6->resize(QSize(81 * scaleFactor, 16 * scaleFactor));
+            ui->pushButton_6->move(QPoint(ui->pushButton->pos().x(), ui->pushButton->pos().y() - (5 * scaleFactor)));
+            ui->pushButton->resize(QSize(ui->pushButton->size().width(), ui->pushButton->size().height() - (15 * scaleFactor)));
+            ui->pushButton->move(QPoint(ui->pushButton->pos().x(), ui->pushButton->pos().y() + (14 * scaleFactor)));
+        }
+        else{
+            ui->pushButton_6->resize(QSize(81, 16));
+            ui->pushButton_6->move(QPoint(ui->pushButton->pos().x(), ui->pushButton->pos().y() - 5));
+            ui->pushButton->resize(QSize(ui->pushButton->size().width(), ui->pushButton->size().height() - 15));
+            ui->pushButton->move(QPoint(ui->pushButton->pos().x(), ui->pushButton->pos().y() + 14));
+            qDebug() << ui->pushButton->geometry();
+        }
+    }
+    else{
+        ui->pushButton->hide();
+        ui->pushButton_6->hide();
+        if(isFullscreen){
+            ui->pushButton->resize(QSize(ui->pushButton->size().width(), ui->pushButton->size().height() + (15 * scaleFactor)));
+            ui->pushButton->move(QPoint(ui->pushButton->pos().x(), ui->pushButton->pos().y() - (14 * scaleFactor)));
+        }
+        else{
+            ui->pushButton->resize(QSize(ui->pushButton->size().width(), ui->pushButton->size().height() + 15));
+            ui->pushButton->move(QPoint(ui->pushButton->pos().x(), ui->pushButton->pos().y() - 14));
+        }
+    }
+}
+
+void MainWindow::botMove()
+{
     if(dynamic_cast<Bot*>(players[Mmove - 1])){
         timer->start(1000);
         if(players[Mmove - 1]->getDifficulty() == "Hard"){
@@ -257,7 +293,6 @@ void MainWindow::botMove() {
         else{
             players[Mmove - 1]->botMove();
         }
-        qDebug() << "!!!!!!!!!!!!!!!!!!!!!\nBotCardsSize: " << players[1]->getCardsSize() << "\nBotCards: ";
         for(int i = 0; i < players[1]->getCardsSize(); i++){
             qDebug() << players[1]->getCards()[i] << " ";
         }
@@ -437,6 +472,12 @@ void MainWindow::onRemoveWidgetPlayer()
                 soundplayer->setSource(QUrl::fromLocalFile(tempFilePathCard));
                 soundplayer->setVolume(soundvol / 100.0);
                 soundplayer->play();
+
+                if(Bridge){
+                    Bridge = false;
+                    pushButtonBridge();
+                }
+
                 Jackchoose = "";
                 maincheck = true;
                 ui->pushButton->hide();
@@ -479,7 +520,7 @@ void MainWindow::onRemoveWidgetPlayer()
                 secondmove();
                 operation(mv);
             }
-            if(tableCards[tableCardsSize - 1][0] != '6'){
+            if(tableCards[tableCardsSize - 1][0] != '6' && !Bridge){
                 gameEnd();
             }
         }
@@ -500,6 +541,11 @@ void MainWindow::onRemoveWidgetColod()
         int playerCardsSize = players[0]->getCardsSize();
 
         if(tableCards[tableCardsSize - 1][0] == '6' || secMove == 0){
+
+            if(Bridge){
+                Bridge = false;
+                pushButtonBridge();
+            }
 
             std::string (&playerCards)[36] = players[0]->getCards();
 
@@ -642,6 +688,7 @@ void MainWindow::cleaner()
     ColodCardsSize = 0;
     tableCardsSize = 0;
 
+    isShuffl = 0;
     PointsX = 1;
     ui->label->setVisible(false);
     ui->label_2->setVisible(false);
@@ -681,7 +728,7 @@ void MainWindow::gameEnd()
         }
         index++;
     }
-    if(cheker){
+    if(cheker || Bridge){
         bool checkForPass = false;
         for(Player* playe : players){
             if(!playe->isInGame()){
@@ -692,11 +739,17 @@ void MainWindow::gameEnd()
                 endClicked(true);
             }
         }
-        if(!checkForPass || tableCards[tableCardsSize - 1][0] == '8' || tableCards[tableCardsSize - 1][0] == '7' || (tableCards[tableCardsSize - 1] == "Qp" && QSMode))
+        if(!checkForPass && (tableCards[tableCardsSize - 1][0] == '8' || tableCards[tableCardsSize - 1][0] == '7' || (tableCards[tableCardsSize - 1] == "Qp" && QSMode)))
             operation(Mmove);
-        int pJackKol = players[index]->getJackKol();
-        if(pJackKol != 0){
-            players[index]->setPoints(players[index]->getPoints() - ((20 * pJackKol) * PointsX));
+
+        if(!Bridge){
+            int pJackKol = players[index]->getJackKol();
+            if(pJackKol != 0){
+                players[index]->setPoints(players[index]->getPoints() - ((20 * pJackKol) * PointsX));
+            }
+        }
+        else{
+            index = 5;
         }
 
         int ind = 0;
@@ -705,42 +758,42 @@ void MainWindow::gameEnd()
             if(ind != index && std::count(losers.begin(), losers.end(), playe) == 0){
                 std::string (&botCards)[36] = playe->getCards();
 
-                int botPoints = playe->getPoints();
+                int finalPoints = playe->getPoints();
 
                 for(int i = 0; i < playe->getCardsSize(); i++){
                     if(botCards[i][0] == 'A'){
-                        botPoints += (15 * PointsX);
+                        finalPoints += (15 * PointsX);
                     }
                     else if(botCards[i][0] == 'J'){
-                        botPoints += (20 * PointsX);
+                        finalPoints += (20 * PointsX);
                     }
                     else if(QSMode && botCards[i] == "Qp"){
-                        botPoints += (50 * PointsX);
+                        finalPoints += (50 * PointsX);
                     }
                     else if(botCards[i][0] == 'K' || botCards[i][0] == 'Q' || botCards[i][0] == '1'){
-                        botPoints += (10 * PointsX);
+                        finalPoints += (10 * PointsX);
                     }
                 }
 
-                if(botPoints == 225 && PointsMode){
+                if(finalPoints == 225 && PointsMode){
                     playe->setPoints(0);
-                    botPoints = 0;
+                    finalPoints = 0;
                 }
-                else if(botPoints == 125){
+                else if(finalPoints == 125){
                     playe->setPoints(0);
-                    botPoints = 0;
+                    finalPoints = 0;
                 }
                 else{
-                    playe->setPoints(botPoints);
+                    playe->setPoints(finalPoints);
                 }
 
-                if(botPoints > 225 && PointsMode){
+                if(finalPoints > 225 && PointsMode){
                     playe->setInGame(false);
                     losers.push_back(playe);
                     losersCounter++;
                     playersCount--;
                 }
-                else if(botPoints > 125 && !PointsMode){
+                else if(finalPoints > 125 && !PointsMode){
                     playe->setInGame(false);
                     losers.push_back(playe);
                     losersCounter++;
@@ -761,7 +814,20 @@ void MainWindow::gameEnd()
 
         std::string massage = "";
 
-        if(losers.size() + 1 == players.size()){
+        if(Bridge){
+            int i = 0;
+            std::pair<int, int> temp = {INT_MAX, 0};
+            for(Player* playe : players){
+                if(playe->getPoints() < temp.first){
+                    temp = {playe->getPoints(), i};
+                }
+
+                ++i;
+            }
+            index = temp.second;
+        }
+
+        if(losers.size() + 1 == players.size() || losers.size() == players.size()){
             isInGame = false;
 
             delete timer;
@@ -1050,10 +1116,22 @@ void MainWindow::operation(int mv)
 {
     if(tableCards[tableCardsSize - 1] == "Qp" && QSMode == true){
         if(!secMove || playersCount == 2){
+            secMove = 0;
             int next = nextOne(mv);
 
             std::string (&Cards)[36] = players[next - 1]->getCards();
             int CardsSize = players[next - 1]->getCardsSize();
+
+            if(Bridge){
+                if(isFullscreen){
+                    ui->pushButton_6->resize(QSize(81 * scaleFactor,31 * scaleFactor));
+                    ui->pushButton_6->move(QPoint(ui->pushButton_6->pos().x(), ui->pushButton_6->pos().y() + (5 * scaleFactor)));
+                }
+                else{
+                    ui->pushButton_6->resize(QSize(81,31));
+                    ui->pushButton_6->move(QPoint(ui->pushButton_6->pos().x(), ui->pushButton_6->pos().y() + 5));
+                }
+            }
 
             if(next != 1){
                 for(int i = 0; i < 5; i++){
@@ -1144,6 +1222,16 @@ void MainWindow::operation(int mv)
                     ui->label_2->setStyleSheet(cs + QString(" font-size: %1pt; border-radius: %2px;").arg(8 * scaleFactor).arg(3 * scaleFactor));
                 }
                 ui->pushButton->hide();
+                if(Bridge){
+                    if(isFullscreen){
+                        ui->pushButton_6->resize(QSize(81 * scaleFactor,31 * scaleFactor));
+                        ui->pushButton_6->move(QPoint(ui->pushButton_6->pos().x(), ui->pushButton_6->pos().y() + (5 * scaleFactor)));
+                    }
+                    else{
+                        ui->pushButton_6->resize(QSize(81,31));
+                        ui->pushButton_6->move(QPoint(ui->pushButton_6->pos().x(), ui->pushButton_6->pos().y() + 5));
+                    }
+                }
                 players[mv - 1]->setPass(0);
                 break;
             }
@@ -1155,7 +1243,7 @@ void MainWindow::operation(int mv)
                 }
                 break;
             }
-            else{
+            else if(!Bridge){
                 for(int i = 0; i < players[mv - 1]->getPass() + 1; i++){
                     next = nextOne(mv + i);
                     if(i == players[mv - 1]->getPass()){
@@ -1198,6 +1286,16 @@ void MainWindow::operation(int mv)
                     ui->label_2->setStyleSheet(cs + QString(" font-size: %1pt; border-radius: %2px;").arg(8 * scaleFactor).arg(3 * scaleFactor));
                 }
                 ui->pushButton->hide();
+                if(Bridge){
+                    if(isFullscreen){
+                        ui->pushButton_6->resize(QSize(81 * scaleFactor,31 * scaleFactor));
+                        ui->pushButton_6->move(QPoint(ui->pushButton_6->pos().x(), ui->pushButton_6->pos().y() + (5 * scaleFactor)));
+                    }
+                    else{
+                        ui->pushButton_6->resize(QSize(81,31));
+                        ui->pushButton_6->move(QPoint(ui->pushButton_6->pos().x(), ui->pushButton_6->pos().y() + 5));
+                    }
+                }
                 players[mv - 1]->setPass(0);
 
                 for(int i = 0; i < playersCount - 1; i++){
@@ -1268,7 +1366,7 @@ void MainWindow::operation(int mv)
                     ui->label_2->setStyleSheet(cs + QString(" font-size: %1pt; border-radius: %2px;").arg(8 * scaleFactor).arg(3 * scaleFactor));
                 }
             }
-            else{
+            else if(!Bridge){
                 for(int i = 0; i < players[mv - 1]->getPass() + 1; i++){
                     next = nextOne(mv + i);
                     std::string (&Cards)[36] = players[next - 1]->getCards();
@@ -1400,8 +1498,12 @@ void MainWindow::secondmove()
             QString cs = ui->label_2->styleSheet();
             ui->label_2->setStyleSheet(cs + QString(" font-size: %1pt; border-radius: %2px;").arg(8 * scaleFactor).arg(3 * scaleFactor));
         }
+        if(tableCardsSize > 3 && tableCards[tableCardsSize - 1][0] != '6' && tableCards[tableCardsSize - 1][0] == tableCards[tableCardsSize - 2][0] && tableCards[tableCardsSize - 1][0] == tableCards[tableCardsSize - 3][0] && tableCards[tableCardsSize - 1][0] == tableCards[tableCardsSize - 4][0]){
+            Bridge = true;
+            pushButtonBridge();
+        }
         for(int i = 0; i < players[0]->getCardsSize(); i++){
-            if(players[0]->getCards()[i][0] == tableCards[tableCardsSize - 1][0] || tableCards[tableCardsSize - 1][0] == '6' || tableCards[tableCardsSize - 1][0] == 'J'){
+            if(players[0]->getCards()[i][0] == tableCards[tableCardsSize - 1][0] || tableCards[tableCardsSize - 1][0] == '6' || tableCards[tableCardsSize - 1][0] == 'J' || Bridge){
                 secMove = 1;
                 Mmove = 1;
                 ui->label_2->setText("Your turn");
@@ -1414,6 +1516,17 @@ void MainWindow::secondmove()
                     ui->pushButton->show();
                 }
                 else if(tableCards[tableCardsSize - 1][0] == 'J'){
+                    ui->pushButton->hide();
+                    if(Bridge){
+                        if(isFullscreen){
+                            ui->pushButton_6->resize(QSize(81 * scaleFactor,31 * scaleFactor));
+                            ui->pushButton_6->move(QPoint(ui->pushButton_6->pos().x(), ui->pushButton_6->pos().y() + (5 * scaleFactor)));
+                        }
+                        else{
+                            ui->pushButton_6->resize(QSize(81,31));
+                            ui->pushButton_6->move(QPoint(ui->pushButton_6->pos().x(), ui->pushButton_6->pos().y() + 5));
+                        }
+                    }
                     ui->pushButton_2->show();
                     ui->pushButton_3->show();
                     ui->pushButton_4->show();
@@ -1680,6 +1793,7 @@ void MainWindow::Resizing(QString label2Str)
             }
             scaleWidget(ui->pushButton);
             scaleFontnRadiusWidget(ui->pushButton, 8, 3);
+            scaleFontnRadiusWidget(ui->pushButton_6, 8, 3);
             scaleWidget(ui->pushButton_2);
             scaleWidget(ui->pushButton_3);
             scaleWidget(ui->pushButton_4);
@@ -1764,7 +1878,12 @@ void MainWindow::WidgetsLocation(QSize windowSize)
     if(players.size() != 4){
         ui->label_2->move(curWidgetPos.x() * scaleFactor, timePos);
         curWidgetPos = ui->pushButton->pos();
-        ui->pushButton->move(curWidgetPos.x() * scaleFactor, timePos + ui->pushButton->height() + (9 * scaleFactor));
+        ui->pushButton->move(curWidgetPos.x() * scaleFactor, timePos + ui->label_2->height() + (9 * scaleFactor));
+        if(Bridge){
+            ui->pushButton_6->resize(QSize(81 * scaleFactor, 16 * scaleFactor));
+            ui->pushButton_6->move(QPoint(ui->pushButton->pos().x(), ui->pushButton->pos().y() - (5 * scaleFactor)));
+            ui->pushButton->move(QPoint(ui->pushButton->pos().x(), ui->pushButton->pos().y() + (14 * scaleFactor)));
+        }
 
         curWidgetPos = ui->label_8->pos();
         timePos = timePos - 4 - ui->label_8->height();
@@ -1796,7 +1915,12 @@ void MainWindow::WidgetsLocation(QSize windowSize)
     if(players.size() == 4){
         int timeInt = (10 * scaleFactor) + ui->verticalLayoutWidget->width();
         ui->label_2->move((((ui->horizontalLayoutWidget_4->pos().x() - timeInt) / 2) - (ui->label_2->width() / 2)) + timeInt, timePos);
-        ui->pushButton->move(ui->label_2->pos().x(), timePos + ui->pushButton->height() + (9 * scaleFactor));
+        ui->pushButton->move(ui->label_2->pos().x(), timePos + ui->label_2->height() + (9 * scaleFactor));
+        if(Bridge){
+            ui->pushButton_6->resize(QSize(81 * scaleFactor, 16 * scaleFactor));
+            ui->pushButton_6->move(QPoint(ui->pushButton->pos().x(), ui->pushButton->pos().y() - (5 * scaleFactor)));
+            ui->pushButton->move(QPoint(ui->pushButton->pos().x(), ui->pushButton->pos().y() + (14 * scaleFactor)));
+        }
 
         timePos = timePos - 4 - ui->label_8->height();
         ui->label_8->move(ui->label_2->pos().x(), timePos);
@@ -1924,6 +2048,7 @@ void MainWindow::setUiGeo()
     ui->pushButton_3->setGeometry(savedButton3Geo);
     ui->pushButton_4->setGeometry(savedButton4Geo);
     ui->pushButton_5->setGeometry(savedButton5Geo);
+    ui->pushButton_6->setGeometry(savedButton6Geo);
     ui->pushButton_10->setGeometry(savedButton10Geo);
     ui->pushButton_11->setGeometry(savedButton11Geo);
     ui->label->setStyleSheet(savedLabelStyle);
@@ -1937,8 +2062,14 @@ void MainWindow::setUiGeo()
     ui->label_8->setStyleSheet(savedLabel8Style);
     ui->label_12->setStyleSheet(savedLabel12Style);
     ui->pushButton->setStyleSheet(savedButtonStyle);
+    ui->pushButton_6->setStyleSheet(savedButton6Style);
     ui->pushButton_10->setStyleSheet(savedButton10Style);
     ui->pushButton_11->setStyleSheet(savedButton11Style);
+
+    if(Bridge){
+        ui->pushButton->resize(QSize(ui->pushButton->size().width(), ui->pushButton->size().height() - 15));
+        ui->pushButton->move(QPoint(ui->pushButton->pos().x(), ui->pushButton->pos().y() + 14));
+    }
 
     QString curText = ui->label_6->text();
     int newFontSize = 11;
@@ -2024,6 +2155,7 @@ void MainWindow::SaveWindowGeometry()
     savedButton3Geo = ui->pushButton_3->geometry();
     savedButton4Geo = ui->pushButton_4->geometry();
     savedButton5Geo = ui->pushButton_5->geometry();
+    savedButton6Geo = ui->pushButton_6->geometry();
     savedButton10Geo = ui->pushButton_10->geometry();
     savedButton11Geo = ui->pushButton_11->geometry();
     savedLabelStyle = ui->label->styleSheet();
@@ -2037,6 +2169,7 @@ void MainWindow::SaveWindowGeometry()
     savedLabel8Style = ui->label_8->styleSheet();
     savedLabel12Style = ui->label_12->styleSheet();
     savedButtonStyle = ui->pushButton->styleSheet();
+    savedButton6Style = ui->pushButton_6->styleSheet();
     savedButton10Style = ui->pushButton_10->styleSheet();
     savedButton11Style = ui->pushButton_11->styleSheet();
     savedLayout2Geo = ui->horizontalLayoutWidget_2->geometry();
@@ -2069,6 +2202,7 @@ void MainWindow::scaleForMany()
         ui->label_2->move(10, 200);
         ui->label_8->move(10, 175);
         ui->pushButton->move(10, 240);
+        ui->pushButton_6->move(10, 235);
 
         ui->label->move(590, 200);
         ui->label_4->move(500, 260);
@@ -2088,6 +2222,7 @@ void MainWindow::scaleForMany()
         ui->label_2->move(10, 200);
         ui->label_8->move(10, 175);
         ui->pushButton->move(10, 240);
+        ui->pushButton_6->move(10, 235);
 
         ui->label->move(450, 200);
         ui->label_4->move(360, 260);
@@ -2106,6 +2241,7 @@ void MainWindow::scaleForMany()
         ui->label_2->move(125, 200);
         ui->label_8->move(125, 175);
         ui->pushButton->move(125, 240);
+        ui->pushButton_6->move(125, 235);
 
         ui->label_12->move(127, 150);
         ui->label_11->move(163, 150);
@@ -2354,6 +2490,9 @@ void MainWindow::playerCreator()
 }
 
 void MainWindow::endClicked(bool end) {
+    int tempEndValue = 0;
+    if(end)
+        tempEndValue = 1;
     if(tableCards[tableCardsSize - 1] == "Qp" && QSMode && players[Mmove - 1]->getPass() > 0){
         players[Mmove - 1]->setPass(0);
         int next;
@@ -2415,7 +2554,7 @@ void MainWindow::endClicked(bool end) {
     else if(tableCards[tableCardsSize - 1][0] == 'A' && players[Mmove - 1]->getPass() > 0){
         int next;
         next = nextOne(Mmove);
-        for(int i = 0; i < players[Mmove - 1]->getPass() + 1; i++){
+        for(int i = 0; i < players[Mmove - 1]->getPass() + tempEndValue; i++){
             next = nextOne(next);
         }
         players[Mmove - 1]->setPass(0);
@@ -2424,7 +2563,7 @@ void MainWindow::endClicked(bool end) {
     else if(tableCards[tableCardsSize - 1][0] == '8' && players[Mmove - 1]->getPass() > 0){
         int next;
 
-        for(int i = 0; i < players[Mmove - 1]->getPass() + 1; i++){
+        for(int i = 0; i < players[Mmove - 1]->getPass() + tempEndValue; i++){
             if(i == 0){
                 next = nextOne(Mmove);
             }
@@ -2527,6 +2666,11 @@ void MainWindow::on_pushButton_clicked()
     soundplayer->play();
 
     endClicked();
+
+    if(Bridge){
+        Bridge = false;
+        pushButtonBridge();
+    }
 }
 
 void MainWindow::on_pushButton_2_clicked()
@@ -2535,6 +2679,10 @@ void MainWindow::on_pushButton_2_clicked()
     soundplayer->setSource(QUrl::fromLocalFile(tempFilePathClick));
     soundplayer->setVolume(soundvol / 100.0);
     soundplayer->play();
+    if(Bridge){
+        Bridge = false;
+        pushButtonBridge();
+    }
     Jackchoose = "c";
     ui->pushButton_2->hide();
     ui->pushButton_3->hide();
@@ -2559,6 +2707,10 @@ void MainWindow::on_pushButton_3_clicked()
     soundplayer->setSource(QUrl::fromLocalFile(tempFilePathClick));
     soundplayer->setVolume(soundvol / 100.0);
     soundplayer->play();
+    if(Bridge){
+        Bridge = false;
+        pushButtonBridge();
+    }
     Jackchoose = "k";
     ui->pushButton_2->hide();
     ui->pushButton_3->hide();
@@ -2583,6 +2735,10 @@ void MainWindow::on_pushButton_4_clicked()
     soundplayer->setSource(QUrl::fromLocalFile(tempFilePathClick));
     soundplayer->setVolume(soundvol / 100.0);
     soundplayer->play();
+    if(Bridge){
+        Bridge = false;
+        pushButtonBridge();
+    }
     Jackchoose = "b";
     ui->pushButton_2->hide();
     ui->pushButton_3->hide();
@@ -2607,6 +2763,10 @@ void MainWindow::on_pushButton_5_clicked()
     soundplayer->setSource(QUrl::fromLocalFile(tempFilePathClick));
     soundplayer->setVolume(soundvol / 100.0);
     soundplayer->play();
+    if(Bridge){
+        Bridge = false;
+        pushButtonBridge();
+    }
     Jackchoose = "p";
     ui->pushButton_2->hide();
     ui->pushButton_3->hide();
@@ -2752,6 +2912,10 @@ void MainWindow::on_pushButton_10_clicked()
 
     if (reply == QMessageBox::Yes) {
         isInGame = false;
+        if(Bridge){
+            Bridge = false;
+            pushButtonBridge();
+        }
 
         for (Player* playe : players) {
             delete playe;
@@ -2776,11 +2940,13 @@ void MainWindow::on_pushButton_10_clicked()
         ColodCardsSize = 0;
         tableCardsSize = 0;
 
+        isShuffl = false;
         PointsX = 1;
         ui->label->setVisible(false);
         ui->label_2->setVisible(false);
 
         ui->pushButton->hide();
+        ui->pushButton_6->hide();
         ui->pushButton_2->hide();
         ui->pushButton_3->hide();
         ui->pushButton_4->hide();
@@ -3263,6 +3429,12 @@ void MainWindow::on_pushButton_18_clicked()
                 fin >> ColodCards[i];
                 onAddWidgetColod(i);
             }
+            if (ColodCardsSize == 0) {
+                onAddWidgetColod(0);
+                isShuffl = true;
+                ui->label_4->setText(QString::fromStdString("Shuffling (" + std::to_string(PointsX + 1) + "x)"));
+                ui->label_4->show();
+            }
 
             fin >> tableCardsSize;
             for(int i = 0; i < tableCardsSize; i++){
@@ -3368,7 +3540,6 @@ void MainWindow::on_pushButton_18_clicked()
 
     Resizing();
 }
-
 
 void MainWindow::on_pushButton_20_clicked()
 {
@@ -3601,3 +3772,17 @@ void MainWindow::on_lineEdit_textEdited(const QString &arg1)
     }
 }
 
+void MainWindow::on_pushButton_6_clicked()
+{
+    soundplayer->stop();
+    soundplayer->setSource(QUrl::fromLocalFile(tempFilePathClick));
+    soundplayer->setVolume(soundvol / 100.0);
+    soundplayer->play();
+
+    players[0]->setJackKol(0);
+
+    gameEnd();
+
+    Bridge = false;
+    pushButtonBridge();
+}

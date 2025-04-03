@@ -130,6 +130,8 @@ public:
 
     int getPlayersCount() const { return playersCount; }
 
+    void pushButtonBridge();
+
 private slots:
 
     void on_pushButton_clicked();
@@ -180,6 +182,8 @@ private slots:
 
     void on_lineEdit_textEdited(const QString &arg1);
 
+    void on_pushButton_6_clicked();
+
 protected:
     bool eventFilter(QObject *obj, QEvent *event) override;
 
@@ -220,9 +224,10 @@ private:
     int musicvol;
     int soundvol;
     bool isFullscreen;
-    bool isInGame;
-    bool isFromSet;
-    bool isShuffl;
+    bool isInGame = false;
+    bool isFromSet = false;
+    bool isShuffl = false;
+    bool Bridge = false;
     QString tempFilePathMenu;
     QString tempFilePathTheme;
     QString tempFilePathClick;
@@ -278,6 +283,7 @@ private:
     QRect savedButton3Geo;
     QRect savedButton4Geo;
     QRect savedButton5Geo;
+    QRect savedButton6Geo;
     QRect savedButton10Geo;
     QRect savedButton11Geo;
     QString savedLabelStyle;
@@ -291,6 +297,7 @@ private:
     QString savedLabel8Style;
     QString savedLabel12Style;
     QString savedButtonStyle;
+    QString savedButton6Style;
     QString savedButton10Style;
     QString savedButton11Style;
     QRect savedLayoutGeo;

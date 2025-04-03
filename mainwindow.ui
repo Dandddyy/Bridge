@@ -1288,6 +1288,32 @@ color: orange</string>
      <set>Qt::AlignCenter</set>
     </property>
    </widget>
+   <widget class="QPushButton" name="pushButton_6">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>235</y>
+      <width>81</width>
+      <height>16</height>
+     </rect>
+    </property>
+    <property name="cursor">
+     <cursorShape>PointingHandCursor</cursorShape>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">font-family: &quot;Segoe UI&quot;;
+    font-size: 8pt;
+    border: 1px solid;
+    border-color: rgb(192,192,192); 
+    border-radius: 3px; 
+ background-color: rgb(230,230,230);
+    color: black;
+    font: bold;</string>
+    </property>
+    <property name="text">
+     <string>Bridge!</string>
+    </property>
+   </widget>
    <zorder>line_2</zorder>
    <zorder>line</zorder>
    <zorder>label_9</zorder>
@@ -1336,6 +1362,7 @@ color: orange</string>
    <zorder>label_15</zorder>
    <zorder>pushButton_20</zorder>
    <zorder>label_16</zorder>
+   <zorder>pushButton_6</zorder>
   </widget>
  </widget>
  <resources/>
