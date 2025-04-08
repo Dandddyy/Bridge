@@ -113,7 +113,8 @@ public:
 
     void botNoChoice();
 
-    void playerMoveSound() {
+    void cardSound()
+    {
         soundplayer->stop();
         soundplayer->setSource(QUrl::fromLocalFile(tempFilePathCard));
         soundplayer->setVolume(soundvol / 100.0);
@@ -184,6 +185,8 @@ private slots:
 
     void on_pushButton_6_clicked();
 
+    void on_pushButton_14_clicked();
+
 protected:
     bool eventFilter(QObject *obj, QEvent *event) override;
 
@@ -228,6 +231,7 @@ private:
     bool isFromSet = false;
     bool isShuffl = false;
     bool Bridge = false;
+    bool speedUp = false;
     QString tempFilePathMenu;
     QString tempFilePathTheme;
     QString tempFilePathClick;
@@ -286,6 +290,7 @@ private:
     QRect savedButton6Geo;
     QRect savedButton10Geo;
     QRect savedButton11Geo;
+    QRect savedButton14Geo;
     QString savedLabelStyle;
     QString savedLabel2Style;
     QString savedLabel4Style;
@@ -300,6 +305,7 @@ private:
     QString savedButton6Style;
     QString savedButton10Style;
     QString savedButton11Style;
+    QString savedButton14Style;
     QRect savedLayoutGeo;
     QRect savedLayout2Geo;
     QRect savedLayout3Geo;
@@ -309,6 +315,15 @@ private:
     QRect savedScroll;
     QSize savedIcon10;
     QSize savedIcon11;
+    QSize savedIcon14;
+
+    void clickedSound()
+    {
+        soundplayer->stop();
+        soundplayer->setSource(QUrl::fromLocalFile(tempFilePathClick));
+        soundplayer->setVolume(soundvol / 100.0);
+        soundplayer->play();
+    }
 
 signals:
     void QSMsignal2(bool, bool, std::string, int, int, bool);

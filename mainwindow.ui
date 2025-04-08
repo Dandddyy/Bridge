@@ -1314,6 +1314,32 @@ color: orange</string>
      <string>Bridge!</string>
     </property>
    </widget>
+   <widget class="QPushButton" name="pushButton_14">
+    <property name="geometry">
+     <rect>
+      <x>630</x>
+      <y>100</y>
+      <width>31</width>
+      <height>31</height>
+     </rect>
+    </property>
+    <property name="cursor">
+     <cursorShape>PointingHandCursor</cursorShape>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">font-family: &quot;Segoe UI&quot;;
+    font-size: 8pt;
+    border: 1px solid;
+    border-color: rgb(192,192,192); 
+    border-radius: 10px; 
+ background-color: rgb(230,230,230);
+    color: black;
+    font: bold;</string>
+    </property>
+    <property name="text">
+     <string/>
+    </property>
+   </widget>
    <zorder>line_2</zorder>
    <zorder>line</zorder>
    <zorder>label_9</zorder>
@@ -1363,6 +1389,7 @@ color: orange</string>
    <zorder>pushButton_20</zorder>
    <zorder>label_16</zorder>
    <zorder>pushButton_6</zorder>
+   <zorder>pushButton_14</zorder>
   </widget>
  </widget>
  <resources/>

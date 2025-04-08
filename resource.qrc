@@ -85,6 +85,7 @@
         <file>PNG-cards-1.3/card_back_reverse.png</file>
         <file>PNG-cards-1.3/connect.png</file>
         <file>PNG-cards-1.3/create.png</file>
+        <file>PNG-cards-1.3/fast-forward.png</file>
     </qresource>
     <qresource prefix="/sd">
         <file>Sound/card.wav</file>

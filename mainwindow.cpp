@@ -71,6 +71,7 @@ MainWindow::MainWindow(QWidget *parent)
     ui->pushButton_6->hide();
     ui->pushButton_10->hide();
     ui->pushButton_11->hide();
+    ui->pushButton_14->hide();
     ui->label_3->hide();
     ui->label_4->hide();
     ui->label_5->hide();
@@ -130,6 +131,8 @@ MainWindow::MainWindow(QWidget *parent)
     QIcon ic4(":/img/PNG-cards-1.3/connect.png");
     ui->pushButton_13->setIcon(ic4);
     ui->pushButton_13->setIconSize(QSize(21,21));
+    QIcon ic5(":/img/PNG-cards-1.3/fast-forward.png");
+    ui->pushButton_14->setIcon(ic5);
 
     connect(window, &optionwindow::QSMsignal, this, &MainWindow::QSMslot);
     connect(window, &optionwindow::Pointssignal, this, &MainWindow::Pointsslot);
@@ -286,7 +289,13 @@ void MainWindow::pushButtonBridge()
 void MainWindow::botMove()
 {
     if(dynamic_cast<Bot*>(players[Mmove - 1])){
-        timer->start(1000);
+        if(speedUp){
+            timer->start(100);
+        }
+        else{
+            timer->start(1000);
+        }
+
         if(players[Mmove - 1]->getDifficulty() == "Hard"){
             players[Mmove - 1]->chooseBestMove();
         }
@@ -299,7 +308,12 @@ void MainWindow::botMove()
         qDebug() << "\n";
     }
     else{
-        timer->start(2000);
+        if(speedUp){
+            timer->start(100);
+        }
+        else{
+            timer->start(2000);
+        }
     }
 }
 
@@ -468,10 +482,7 @@ void MainWindow::onRemoveWidgetPlayer()
                 check = possibleMove(playerCards[i], "0" + Jackchoose, 0);
             }
             if(button == playerButtons[i] && check == true){
-                soundplayer->stop();
-                soundplayer->setSource(QUrl::fromLocalFile(tempFilePathCard));
-                soundplayer->setVolume(soundvol / 100.0);
-                soundplayer->play();
+                cardSound();
 
                 if(Bridge){
                     Bridge = false;
@@ -553,10 +564,7 @@ void MainWindow::onRemoveWidgetColod()
                 shuffling();
             }
 
-            soundplayer->stop();
-            soundplayer->setSource(QUrl::fromLocalFile(tempFilePathCard));
-            soundplayer->setVolume(soundvol / 100.0);
-            soundplayer->play();
+            cardSound();
 
             playerCards[playerCardsSize] = ColodCards[ColodCardsSize - 1];
             onAddWidgetPlayer(players[0], playerCards[playerCardsSize], playerCardsSize);
@@ -597,10 +605,7 @@ void MainWindow::onRemoveWidgetColodBot(){
                 shuffling();
             }
 
-            soundplayer->stop();
-            soundplayer->setSource(QUrl::fromLocalFile(tempFilePathCard));
-            soundplayer->setVolume(soundvol / 100.0);
-            soundplayer->play();
+            cardSound();
 
             players[Mmove - 1]->getCards()[botCardsSize] = ColodCards[ColodCardsSize - 1];
             onAddWidgetBot(players[Mmove - 1], botCardsSize);
@@ -627,10 +632,7 @@ void MainWindow::onRemoveWidgetColodBot(){
 void MainWindow::shuffling()
 {
     isShuffl = false;
-    soundplayer->stop();
-    soundplayer->setSource(QUrl::fromLocalFile(tempFilePathCard));
-    soundplayer->setVolume(soundvol / 100.0);
-    soundplayer->play();
+    cardSound();
 
     delete ColodButtons[0];
     ColodButtons[0] = nullptr;
@@ -852,10 +854,7 @@ void MainWindow::gameEnd()
             }
             msgBox.setText(QString::fromStdString(massage));
             msgBox.exec();
-            soundplayer->stop();
-            soundplayer->setSource(QUrl::fromLocalFile(tempFilePathClick));
-            soundplayer->setVolume(soundvol / 100.0);
-            soundplayer->play();
+            clickedSound();
 
             cleaner();
 
@@ -868,6 +867,7 @@ void MainWindow::gameEnd()
             ui->pushButton_13->show();
             ui->pushButton_7->show();
             ui->pushButton_8->show();
+            ui->pushButton_14->hide();
             ui->label_11->hide();
             ui->label_12->hide();
             ui->label_13->hide();
@@ -915,12 +915,11 @@ void MainWindow::gameEnd()
             msgBox.setText(QString::fromStdString(massage));
             msgBox.exec();
 
-            soundplayer->stop();
-            soundplayer->setSource(QUrl::fromLocalFile(tempFilePathClick));
-            soundplayer->setVolume(soundvol / 100.0);
-            soundplayer->play();
+            clickedSound();
 
             cleaner();
+
+            bool checkForHuman = false;
 
             for(Player* playe : players){
                 if (playe->getDifficulty() == "Middle"){
@@ -942,6 +941,9 @@ void MainWindow::gameEnd()
                     }
                 }
                 else{
+                    if(playe->isInGame()){
+                        checkForHuman = true;
+                    }
                     playe->getLabel()->setText(QString::fromStdString(playe->getName() + " | Points: " + std::to_string(playe->getPoints())));
                 }
 
@@ -949,6 +951,9 @@ void MainWindow::gameEnd()
             }
 
             players[0]->getLabel()->setText(QString::fromStdString("Your Points: " + std::to_string(players[0]->getPoints())));
+
+            if(!checkForHuman)
+                ui->pushButton_14->show();
 
             ui->label->setVisible(true);
             ui->label_2->setVisible(true);
@@ -1043,7 +1048,12 @@ void MainWindow::gameEnd()
 
             timer = new QTimer();
             connect(timer, SIGNAL(timeout()), this, SLOT(botMove()));
-            timer->start(2000);
+            if(speedUp){
+                timer->start(100);
+            }
+            else{
+                timer->start(2000);
+            }
 
             AutoSave();
         }
@@ -1662,77 +1672,71 @@ void MainWindow::Start()
 
 void MainWindow::AutoSave()
 {
-    bool checker = true;
-    for(Player* playe : players){
-        if(playe->getCardsSize() <= 0){
-            checker = false;
-        }
-    }
-    if(checker){
-        std::ofstream fout;
-        fout.open(dirGame.toStdString());
+    std::ofstream fout;
+    fout.open(dirGame.toStdString());
 
-        if(fout.is_open()){
+    if(fout.is_open()){
 
-            fout << "Can_Resume\n";
+        fout << "Can_Resume\n";
 
-            fout << players.size() << "\n";
+        fout << players.size() << "\n";
 
-            for(Player* playe : players){
-                if(playe->getDifficulty() == ""){
-                    fout << "empty" << "\n";
-                }
-                else{
-                    fout << playe->getDifficulty() << "\n";
-                }
-            }
-
-            fout << playersCount << "\n";
-
-            for(Player* playe : players){
-                int cardsSize = playe->getCardsSize();
-
-                fout << playe->getPass() << "\n";
-                fout << playe->isInGame() << "\n";
-
-                fout << playe->getName() << "\n";
-
-                fout << cardsSize << "\n";
-                for(int i = 0; i < cardsSize; i++){
-                    fout << playe->getCards()[i] << "\n";
-                }
-
-                fout << playe->getCheckForTake() << "\n";
-                fout << playe->getPoints() << "\n";
-                fout << playe->getJackKol() << "\n";
-            }
-
-            fout << ColodCardsSize << "\n";
-            for(int i = 0; i < ColodCardsSize; i++){
-                fout << ColodCards[i] << "\n";
-            }
-
-            fout << tableCardsSize << "\n";
-            for(int i = 0; i < tableCardsSize; i++){
-                fout << tableCards[i] << "\n";
-            }
-
-            fout << Mmove << "\n";
-            fout << secMove << "\n";
-            if(Jackchoose == "")
+        for(Player* playe : players){
+            if(playe->getDifficulty() == ""){
                 fout << "empty" << "\n";
-            else
-                fout << Jackchoose << "\n";
-            fout << PointsX << "\n";
-            fout << Set << "\n";
-            fout << ui->pushButton->isVisible() << "\n";
-            fout << ui->pushButton_2->isVisible() << "\n";
-            fout << ui->label_3->isVisible() << "\n";
-            fout << QSMode << "\n";
-            fout << PointsMode;
+            }
+            else{
+                fout << playe->getDifficulty() << "\n";
+            }
         }
-        fout.close();
+
+        fout << playersCount << "\n";
+
+        for(Player* playe : players){
+            int cardsSize = playe->getCardsSize();
+
+            fout << playe->getPass() << "\n";
+            fout << playe->isInGame() << "\n";
+
+            fout << playe->getName() << "\n";
+
+            fout << cardsSize << "\n";
+            for(int i = 0; i < cardsSize; i++){
+                fout << playe->getCards()[i] << "\n";
+            }
+
+            fout << playe->getCheckForTake() << "\n";
+            fout << playe->getPoints() << "\n";
+            fout << playe->getJackKol() << "\n";
+        }
+
+        fout << ColodCardsSize << "\n";
+        for(int i = 0; i < ColodCardsSize; i++){
+            fout << ColodCards[i] << "\n";
+        }
+
+        fout << tableCardsSize << "\n";
+        for(int i = 0; i < tableCardsSize; i++){
+            fout << tableCards[i] << "\n";
+        }
+
+        fout << Mmove << "\n";
+        fout << secMove << "\n";
+        if(Jackchoose == "")
+            fout << "empty" << "\n";
+        else
+            fout << Jackchoose << "\n";
+        fout << PointsX << "\n";
+        fout << Set << "\n";
+        fout << ui->pushButton->isVisible() << "\n";
+        fout << ui->pushButton_2->isVisible() << "\n";
+        fout << ui->label_3->isVisible() << "\n";
+        fout << QSMode << "\n";
+        fout << PointsMode << "\n";
+        fout << Bridge << "\n";
+        fout << !ui->pushButton_14->isHidden();
     }
+    fout.close();
 }
 
 void MainWindow::OptionsSave()
@@ -1802,10 +1806,14 @@ void MainWindow::Resizing(QString label2Str)
             scaleFontnRadiusWidget(ui->pushButton_10, 0, 10);
             scaleWidget(ui->pushButton_11);
             scaleFontnRadiusWidget(ui->pushButton_11, 0, 10);
+            scaleWidget(ui->pushButton_14);
+            scaleFontnRadiusWidget(ui->pushButton_14, 0, 10);
             QSize picSize = ui->pushButton_10->iconSize();
             ui->pushButton_10->setIconSize(QSize(picSize.width()*scaleFactor, picSize.height()*scaleFactor));
             picSize = ui->pushButton_11->iconSize();
             ui->pushButton_11->setIconSize(QSize(picSize.width()*scaleFactor, picSize.height()*scaleFactor));
+            picSize = ui->pushButton_14->iconSize();
+            ui->pushButton_14->setIconSize(QSize(picSize.width()*scaleFactor, picSize.height()*scaleFactor));
             scaleWidget(ui->horizontalLayoutWidget_2);
             scaleWidget(ui->horizontalLayoutWidget_3);
             scaleWidget(ui->horizontalLayoutWidget_4);
@@ -1933,6 +1941,7 @@ void MainWindow::WidgetsLocation(QSize windowSize)
 
     ui->pushButton_10->move((windowSize.width() - 20) - ui->pushButton_10->width(), 20);
     ui->pushButton_11->move((windowSize.width() - 20) - ui->pushButton_11->width(), 20 + ui->pushButton_10->height() + (10 * scaleFactor));
+    ui->pushButton_14->move((windowSize.width() - 20) - ui->pushButton_14->width(), ui->pushButton_11->pos().y() + ui->pushButton_11->height() + (10 * scaleFactor));
 
     ui->scrollArea->move((windowSize.width() / 2) - (ui->scrollArea->width() / 2), windowSize.height() - 20 - ui->scrollArea->height());
     ui->scrollAreaWidgetContents->setMinimumSize(QSize((70*scaleFactor)*players[0]->getCardsSize(),0));
@@ -2051,6 +2060,7 @@ void MainWindow::setUiGeo()
     ui->pushButton_6->setGeometry(savedButton6Geo);
     ui->pushButton_10->setGeometry(savedButton10Geo);
     ui->pushButton_11->setGeometry(savedButton11Geo);
+    ui->pushButton_14->setGeometry(savedButton14Geo);
     ui->label->setStyleSheet(savedLabelStyle);
     ui->label_2->setStyleSheet(savedLabel2Style);
     ui->label_4->setStyleSheet(savedLabel4Style);
@@ -2065,6 +2075,14 @@ void MainWindow::setUiGeo()
     ui->pushButton_6->setStyleSheet(savedButton6Style);
     ui->pushButton_10->setStyleSheet(savedButton10Style);
     ui->pushButton_11->setStyleSheet(savedButton11Style);
+    ui->pushButton_14->setStyleSheet(savedButton14Style);
+
+    if(speedUp){
+        ui->pushButton_14->setStyleSheet("font-family: 'Segoe UI'; font-size: 8pt; border: 1px solid; border-color: rgb(113,178,235); border-radius: 10px; background-color: rgb(147,195,237); color: black; font: bold;");
+    }
+    else{
+        ui->pushButton_14->setStyleSheet("font-family: 'Segoe UI'; font-size: 8pt; border: 1px solid; border-color: rgb(192,192,192); border-radius: 10px; background-color: rgb(230,230,230); color: black; font: bold;");
+    }
 
     if(Bridge){
         ui->pushButton->resize(QSize(ui->pushButton->size().width(), ui->pushButton->size().height() - 15));
@@ -2131,6 +2149,7 @@ void MainWindow::setUiGeo()
 
     ui->pushButton_10->setIconSize(savedIcon10);
     ui->pushButton_11->setIconSize(savedIcon11);
+    ui->pushButton_14->setIconSize(savedIcon14);
 }
 
 void MainWindow::SaveWindowGeometry()
@@ -2158,6 +2177,7 @@ void MainWindow::SaveWindowGeometry()
     savedButton6Geo = ui->pushButton_6->geometry();
     savedButton10Geo = ui->pushButton_10->geometry();
     savedButton11Geo = ui->pushButton_11->geometry();
+    savedButton14Geo = ui->pushButton_14->geometry();
     savedLabelStyle = ui->label->styleSheet();
     savedLabel2Style = ui->label_2->styleSheet();
     savedLabel4Style = ui->label_4->styleSheet();
@@ -2172,6 +2192,7 @@ void MainWindow::SaveWindowGeometry()
     savedButton6Style = ui->pushButton_6->styleSheet();
     savedButton10Style = ui->pushButton_10->styleSheet();
     savedButton11Style = ui->pushButton_11->styleSheet();
+    savedButton14Style = ui->pushButton_14->styleSheet();
     savedLayout2Geo = ui->horizontalLayoutWidget_2->geometry();
     savedVLayoutGeo = ui->verticalLayoutWidget->geometry();
     savedVLayout2Geo = ui->verticalLayoutWidget_2->geometry();
@@ -2181,6 +2202,7 @@ void MainWindow::SaveWindowGeometry()
     savedScroll = ui->scrollArea->geometry();
     savedIcon10 = ui->pushButton_10->iconSize();
     savedIcon11 = ui->pushButton_11->iconSize();
+    savedIcon14 = ui->pushButton_14->iconSize();
 }
 
 void MainWindow::scaleForMany()
@@ -2265,10 +2287,7 @@ void MainWindow::scaleForMany()
 
 void MainWindow::playerCreator()
 {
-    soundplayer->stop();
-    soundplayer->setSource(QUrl::fromLocalFile(tempFilePathClick));
-    soundplayer->setVolume(soundvol / 100.0);
-    soundplayer->play();
+    clickedSound();
 
     std::vector<std::string> botNames = {"Adam", "David", "Alex", "Niko", "Kevin", "Andrew", "Luka", "Steven", "Ivan", "Leo","Robert",
                                          "Thomas", "John", "Colin", "Edward", "Frank", "Daniel", "Donald", "Bruce", "Tom", "Max", "Mark", "Oscar"};
@@ -2660,10 +2679,7 @@ void MainWindow::endClicked(bool end) {
 
 void MainWindow::on_pushButton_clicked()
 {
-    soundplayer->stop();
-    soundplayer->setSource(QUrl::fromLocalFile(tempFilePathClick));
-    soundplayer->setVolume(soundvol / 100.0);
-    soundplayer->play();
+    clickedSound();
 
     endClicked();
 
@@ -2675,10 +2691,7 @@ void MainWindow::on_pushButton_clicked()
 
 void MainWindow::on_pushButton_2_clicked()
 {
-    soundplayer->stop();
-    soundplayer->setSource(QUrl::fromLocalFile(tempFilePathClick));
-    soundplayer->setVolume(soundvol / 100.0);
-    soundplayer->play();
+    clickedSound();
     if(Bridge){
         Bridge = false;
         pushButtonBridge();
@@ -2703,10 +2716,7 @@ void MainWindow::on_pushButton_2_clicked()
 
 void MainWindow::on_pushButton_3_clicked()
 {
-    soundplayer->stop();
-    soundplayer->setSource(QUrl::fromLocalFile(tempFilePathClick));
-    soundplayer->setVolume(soundvol / 100.0);
-    soundplayer->play();
+    clickedSound();
     if(Bridge){
         Bridge = false;
         pushButtonBridge();
@@ -2731,10 +2741,7 @@ void MainWindow::on_pushButton_3_clicked()
 
 void MainWindow::on_pushButton_4_clicked()
 {
-    soundplayer->stop();
-    soundplayer->setSource(QUrl::fromLocalFile(tempFilePathClick));
-    soundplayer->setVolume(soundvol / 100.0);
-    soundplayer->play();
+    clickedSound();
     if(Bridge){
         Bridge = false;
         pushButtonBridge();
@@ -2759,10 +2766,7 @@ void MainWindow::on_pushButton_4_clicked()
 
 void MainWindow::on_pushButton_5_clicked()
 {
-    soundplayer->stop();
-    soundplayer->setSource(QUrl::fromLocalFile(tempFilePathClick));
-    soundplayer->setVolume(soundvol / 100.0);
-    soundplayer->play();
+    clickedSound();
     if(Bridge){
         Bridge = false;
         pushButtonBridge();
@@ -2787,10 +2791,7 @@ void MainWindow::on_pushButton_5_clicked()
 
 void MainWindow::on_pushButton_8_clicked()
 {
-    soundplayer->stop();
-    soundplayer->setSource(QUrl::fromLocalFile(tempFilePathClick));
-    soundplayer->setVolume(soundvol / 100.0);
-    soundplayer->play();
+    clickedSound();
     QMessageBox YesNomsgBox(this);
     YesNomsgBox.setWindowTitle("Quit");
     YesNomsgBox.setText("Are you sure?");
@@ -2803,10 +2804,7 @@ void MainWindow::on_pushButton_8_clicked()
     }
 
     int reply = YesNomsgBox.exec();
-    soundplayer->stop();
-    soundplayer->setSource(QUrl::fromLocalFile(tempFilePathClick));
-    soundplayer->setVolume(soundvol / 100.0);
-    soundplayer->play();
+    clickedSound();
 
     if (reply == QMessageBox::Yes) {
         QApplication::quit();
@@ -2815,10 +2813,8 @@ void MainWindow::on_pushButton_8_clicked()
 
 void MainWindow::on_pushButton_7_clicked()
 {
-    soundplayer->stop();
-    soundplayer->setSource(QUrl::fromLocalFile(tempFilePathClick));
-    soundplayer->setVolume(soundvol / 100.0);
-    soundplayer->play();
+    clickedSound();
+
     window->hide();
     window->setWindowTitle("Options");
     window->setWindowIcon(QIcon(":/img/PNG-cards-1.3/kindpng_4637727.png"));
@@ -2889,10 +2885,7 @@ void MainWindow::Displayslot(bool val)
 
 void MainWindow::on_pushButton_10_clicked()
 {   
-    soundplayer->stop();
-    soundplayer->setSource(QUrl::fromLocalFile(tempFilePathClick));
-    soundplayer->setVolume(soundvol / 100.0);
-    soundplayer->play();
+    clickedSound();
     QMessageBox YesNomsgBox(this);
     YesNomsgBox.setWindowTitle("Quit");
     YesNomsgBox.setText("Are you sure?");
@@ -2905,10 +2898,7 @@ void MainWindow::on_pushButton_10_clicked()
     }
 
     int reply = YesNomsgBox.exec();
-    soundplayer->stop();
-    soundplayer->setSource(QUrl::fromLocalFile(tempFilePathClick));
-    soundplayer->setVolume(soundvol / 100.0);
-    soundplayer->play();
+    clickedSound();
 
     if (reply == QMessageBox::Yes) {
         isInGame = false;
@@ -2953,6 +2943,7 @@ void MainWindow::on_pushButton_10_clicked()
         ui->pushButton_5->hide();
         ui->pushButton_10->hide();
         ui->pushButton_11->hide();
+        ui->pushButton_14->hide();
         ui->label_3->hide();
         ui->label_4->hide();
         ui->label_5->hide();
@@ -2996,10 +2987,8 @@ void MainWindow::on_pushButton_10_clicked()
 
 void MainWindow::on_pushButton_11_clicked()
 {
-    soundplayer->stop();
-    soundplayer->setSource(QUrl::fromLocalFile(tempFilePathClick));
-    soundplayer->setVolume(soundvol / 100.0);
-    soundplayer->play();
+    clickedSound();
+
     window->hide();
     window->setWindowTitle("Options");
     window->setWindowIcon(QIcon(":/img/PNG-cards-1.3/kindpng_4637727.png"));
@@ -3008,10 +2997,7 @@ void MainWindow::on_pushButton_11_clicked()
 
 void MainWindow::on_pushButton_12_clicked()
 {
-    soundplayer->stop();
-    soundplayer->setSource(QUrl::fromLocalFile(tempFilePathClick));
-    soundplayer->setVolume(soundvol / 100.0);
-    soundplayer->play();
+    clickedSound();
 
     ui->lineEdit->setDisabled(false);
 
@@ -3085,10 +3071,7 @@ void MainWindow::on_pushButton_12_clicked()
 
 void MainWindow::on_pushButton_19_clicked()
 {
-    soundplayer->stop();
-    soundplayer->setSource(QUrl::fromLocalFile(tempFilePathClick));
-    soundplayer->setVolume(soundvol / 100.0);
-    soundplayer->play();
+    clickedSound();
 
     ui->pushButton_12->show();
     ui->pushButton_13->show();
@@ -3118,10 +3101,7 @@ void MainWindow::on_pushButton_19_clicked()
 
 void MainWindow::on_pushButton_15_clicked()
 {
-    soundplayer->stop();
-    soundplayer->setSource(QUrl::fromLocalFile(tempFilePathClick));
-    soundplayer->setVolume(soundvol / 100.0);
-    soundplayer->play();
+    clickedSound();
 
     if(ui->pushButton_15->pos().x() == 310){
         QIcon ic4(":/img/PNG-cards-1.3/cross.png");
@@ -3162,10 +3142,7 @@ void MainWindow::on_pushButton_15_clicked()
 
 void MainWindow::on_pushButton_16_clicked()
 {
-    soundplayer->stop();
-    soundplayer->setSource(QUrl::fromLocalFile(tempFilePathClick));
-    soundplayer->setVolume(soundvol / 100.0);
-    soundplayer->play();
+    clickedSound();
 
     if(ui->pushButton_16->pos().x() == 90){
         QIcon ic4(":/img/PNG-cards-1.3/cross.png");
@@ -3206,10 +3183,7 @@ void MainWindow::on_pushButton_16_clicked()
 
 void MainWindow::on_pushButton_17_clicked()
 {
-    soundplayer->stop();
-    soundplayer->setSource(QUrl::fromLocalFile(tempFilePathClick));
-    soundplayer->setVolume(soundvol / 100.0);
-    soundplayer->play();
+    clickedSound();
 
     if(ui->pushButton_17->pos().x() == 530){
         QIcon ic4(":/img/PNG-cards-1.3/cross.png");
@@ -3342,8 +3316,8 @@ void MainWindow::on_pushButton_18_clicked()
 
             int bucketInt;
             bool bucketBool;
-
             std::string bucket;
+
             fin >> bucket;
 
             fin >> playersCount;
@@ -3507,6 +3481,10 @@ void MainWindow::on_pushButton_18_clicked()
             }
             fin >> QSMode;
             fin >> PointsMode;
+            fin >> Bridge;
+            fin >> bucketBool;
+            if(bucketBool)
+                ui->pushButton_14->show();
         }
         fin.close();
     }
@@ -3539,14 +3517,27 @@ void MainWindow::on_pushButton_18_clicked()
     SaveWindowGeometry();
 
     Resizing();
+
+    if(Bridge && ui->pushButton->isHidden()){
+        pushButtonBridge();
+        ui->pushButton->hide();
+        if(isFullscreen){
+            ui->pushButton_6->resize(QSize(81 * scaleFactor,31 * scaleFactor));
+            ui->pushButton_6->move(QPoint(ui->pushButton_6->pos().x(), ui->pushButton_6->pos().y() + (5 * scaleFactor)));
+        }
+        else{
+            ui->pushButton_6->resize(QSize(81,31));
+            ui->pushButton_6->move(QPoint(ui->pushButton_6->pos().x(), ui->pushButton_6->pos().y() + 5));
+        }
+    }
+    else if(Bridge){
+        pushButtonBridge();
+    }
 }
 
 void MainWindow::on_pushButton_20_clicked()
 {
-    soundplayer->stop();
-    soundplayer->setSource(QUrl::fromLocalFile(tempFilePathClick));
-    soundplayer->setVolume(soundvol / 100.0);
-    soundplayer->play();
+    clickedSound();
 
     QString curText = ui->pushButton_20->text();
 
@@ -3774,10 +3765,7 @@ void MainWindow::on_lineEdit_textEdited(const QString &arg1)
 
 void MainWindow::on_pushButton_6_clicked()
 {
-    soundplayer->stop();
-    soundplayer->setSource(QUrl::fromLocalFile(tempFilePathClick));
-    soundplayer->setVolume(soundvol / 100.0);
-    soundplayer->play();
+    clickedSound();
 
     players[0]->setJackKol(0);
 
@@ -3785,4 +3773,18 @@ void MainWindow::on_pushButton_6_clicked()
 
     Bridge = false;
     pushButtonBridge();
+}
+
+void MainWindow::on_pushButton_14_clicked()
+{
+    clickedSound();
+
+    if(speedUp){
+        speedUp = false;
+        ui->pushButton_14->setStyleSheet("font-family: 'Segoe UI'; font-size: 8pt; border: 1px solid; border-color: rgb(192,192,192); border-radius: 10px; background-color: rgb(230,230,230); color: black; font: bold;");
+    }
+    else{
+        speedUp = true;
+        ui->pushButton_14->setStyleSheet("font-family: 'Segoe UI'; font-size: 8pt; border: 1px solid; border-color: rgb(113,178,235); border-radius: 10px; background-color: rgb(147,195,237); color: black; font: bold;");
+    }
 }

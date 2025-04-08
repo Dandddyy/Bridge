@@ -342,7 +342,7 @@ void Bot::botMove() {
         }
     }
     if(finalmoveSize > 0 && finalmove[0] < cardsSize){
-        mainWindow->playerMoveSound();
+        mainWindow->cardSound();
         if(cards[finalmove[finalmoveSize - 1]][0] == 'J'){
             jackKol++;
         }
@@ -374,6 +374,7 @@ void Bot::botMove() {
         }
         if(newtable[newtableSize - 1][0] != '6'){
             checkForEnd = true;
+            mainWindow->AutoSave();
             mainWindow->gameEnd();
         }
     }
@@ -479,7 +480,7 @@ void Bot::chooseBestMove() {
 
             qDebug() << "----------------------------------\n";
 
-            mainWindow->playerMoveSound();
+            mainWindow->cardSound();
 
             if(bestMove[0] == 'J'){
                 jackKol++;
@@ -553,6 +554,7 @@ void Bot::chooseBestMove() {
             }
             if(newtable[newtableSize - 1][0] != '6'){
                 checkForEnd = true;
+                mainWindow->AutoSave();
                 mainWindow->gameEnd();
             }
         }
