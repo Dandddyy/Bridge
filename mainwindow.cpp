@@ -852,6 +852,14 @@ void MainWindow::gameEnd()
                     massage = massage + "\n" + players[i]->getName() + " points: " + std::to_string(players[i]->getPoints());
                 }
             }
+
+            if(Bridge)
+                massage = "Bridge!\n" + massage;
+
+            Bridge = false;
+            if(!ui->pushButton_6->isHidden())
+                pushButtonBridge();
+
             msgBox.setText(QString::fromStdString(massage));
             msgBox.exec();
             clickedSound();
@@ -868,6 +876,8 @@ void MainWindow::gameEnd()
             ui->pushButton_7->show();
             ui->pushButton_8->show();
             ui->pushButton_14->hide();
+            speedUp = false;
+            ui->pushButton_14->setStyleSheet("font-family: 'Segoe UI'; font-size: 8pt; border: 1px solid; border-color: rgb(192,192,192); border-radius: 10px; background-color: rgb(230,230,230); color: black; font: bold;");
             ui->label_11->hide();
             ui->label_12->hide();
             ui->label_13->hide();
@@ -912,6 +922,14 @@ void MainWindow::gameEnd()
                     massage = massage + "\n" + players[i]->getName() + " points: " + std::to_string(players[i]->getPoints());
                 }
             }
+
+            if(Bridge)
+                massage = "Bridge!\n" + massage;
+
+            Bridge = false;
+            if(!ui->pushButton_6->isHidden())
+                pushButtonBridge();
+
             msgBox.setText(QString::fromStdString(massage));
             msgBox.exec();
 
@@ -1132,7 +1150,7 @@ void MainWindow::operation(int mv)
             std::string (&Cards)[36] = players[next - 1]->getCards();
             int CardsSize = players[next - 1]->getCardsSize();
 
-            if(Bridge){
+            if(Bridge && Mmove == 1){
                 if(isFullscreen){
                     ui->pushButton_6->resize(QSize(81 * scaleFactor,31 * scaleFactor));
                     ui->pushButton_6->move(QPoint(ui->pushButton_6->pos().x(), ui->pushButton_6->pos().y() + (5 * scaleFactor)));
@@ -1232,7 +1250,7 @@ void MainWindow::operation(int mv)
                     ui->label_2->setStyleSheet(cs + QString(" font-size: %1pt; border-radius: %2px;").arg(8 * scaleFactor).arg(3 * scaleFactor));
                 }
                 ui->pushButton->hide();
-                if(Bridge){
+                if(Bridge && Mmove == 1){
                     if(isFullscreen){
                         ui->pushButton_6->resize(QSize(81 * scaleFactor,31 * scaleFactor));
                         ui->pushButton_6->move(QPoint(ui->pushButton_6->pos().x(), ui->pushButton_6->pos().y() + (5 * scaleFactor)));
@@ -1296,7 +1314,7 @@ void MainWindow::operation(int mv)
                     ui->label_2->setStyleSheet(cs + QString(" font-size: %1pt; border-radius: %2px;").arg(8 * scaleFactor).arg(3 * scaleFactor));
                 }
                 ui->pushButton->hide();
-                if(Bridge){
+                if(Bridge && Mmove == 1){
                     if(isFullscreen){
                         ui->pushButton_6->resize(QSize(81 * scaleFactor,31 * scaleFactor));
                         ui->pushButton_6->move(QPoint(ui->pushButton_6->pos().x(), ui->pushButton_6->pos().y() + (5 * scaleFactor)));
@@ -1508,7 +1526,10 @@ void MainWindow::secondmove()
             QString cs = ui->label_2->styleSheet();
             ui->label_2->setStyleSheet(cs + QString(" font-size: %1pt; border-radius: %2px;").arg(8 * scaleFactor).arg(3 * scaleFactor));
         }
-        if(tableCardsSize > 3 && tableCards[tableCardsSize - 1][0] != '6' && tableCards[tableCardsSize - 1][0] == tableCards[tableCardsSize - 2][0] && tableCards[tableCardsSize - 1][0] == tableCards[tableCardsSize - 3][0] && tableCards[tableCardsSize - 1][0] == tableCards[tableCardsSize - 4][0]){
+        if(tableCardsSize > 3 && tableCards[tableCardsSize - 1][0] != '6' && tableCards[tableCardsSize - 1][0] == tableCards[tableCardsSize - 2][0]
+            && tableCards[tableCardsSize - 1][0] == tableCards[tableCardsSize - 3][0]
+            && tableCards[tableCardsSize - 1][0] == tableCards[tableCardsSize - 4][0])
+        {
             Bridge = true;
             pushButtonBridge();
         }
@@ -1566,6 +1587,14 @@ void MainWindow::secondmove()
             QString cs = ui->label_2->styleSheet();
             ui->label_2->setStyleSheet(cs + QString(" font-size: %1pt; border-radius: %2px;").arg(8 * scaleFactor).arg(3 * scaleFactor));
         }
+
+        if(tableCardsSize > 3 && tableCards[tableCardsSize - 1][0] != '6' && tableCards[tableCardsSize - 1][0] == tableCards[tableCardsSize - 2][0]
+            && tableCards[tableCardsSize - 1][0] == tableCards[tableCardsSize - 3][0]
+            && tableCards[tableCardsSize - 1][0] == tableCards[tableCardsSize - 4][0])
+        {
+            Bridge = true;
+        }
+
         if(tableCards[tableCardsSize - 1][0] == '6'){
             Mmove = mv;
             ui->label_2->setText(QString::fromStdString(players[Mmove - 1]->getName()) + "\nturn");
@@ -1578,7 +1607,7 @@ void MainWindow::secondmove()
         }
         else{
             for(int i = 0; i < players[mv - 1]->getCardsSize(); i++){
-                if(players[mv - 1]->getCards()[i][0] == tableCards[tableCardsSize - 1][0]){
+                if(players[mv - 1]->getCards()[i][0] == tableCards[tableCardsSize - 1][0] || Bridge){
                     secMove = 1;
                     Mmove = mv;
                     ui->label_2->setText(QString::fromStdString(players[Mmove - 1]->getName()) + "\nturn");
@@ -1587,6 +1616,7 @@ void MainWindow::secondmove()
                         QString cs = ui->label_2->styleSheet();
                         ui->label_2->setStyleSheet(cs + QString(" font-size: %1pt; border-radius: %2px;").arg(8 * scaleFactor).arg(3 * scaleFactor));
                     }
+                    break;
                 }
             }
         }
@@ -1887,7 +1917,7 @@ void MainWindow::WidgetsLocation(QSize windowSize)
         ui->label_2->move(curWidgetPos.x() * scaleFactor, timePos);
         curWidgetPos = ui->pushButton->pos();
         ui->pushButton->move(curWidgetPos.x() * scaleFactor, timePos + ui->label_2->height() + (9 * scaleFactor));
-        if(Bridge){
+        if(Bridge  && Mmove == 1){
             ui->pushButton_6->resize(QSize(81 * scaleFactor, 16 * scaleFactor));
             ui->pushButton_6->move(QPoint(ui->pushButton->pos().x(), ui->pushButton->pos().y() - (5 * scaleFactor)));
             ui->pushButton->move(QPoint(ui->pushButton->pos().x(), ui->pushButton->pos().y() + (14 * scaleFactor)));
@@ -1924,7 +1954,7 @@ void MainWindow::WidgetsLocation(QSize windowSize)
         int timeInt = (10 * scaleFactor) + ui->verticalLayoutWidget->width();
         ui->label_2->move((((ui->horizontalLayoutWidget_4->pos().x() - timeInt) / 2) - (ui->label_2->width() / 2)) + timeInt, timePos);
         ui->pushButton->move(ui->label_2->pos().x(), timePos + ui->label_2->height() + (9 * scaleFactor));
-        if(Bridge){
+        if(Bridge && Mmove == 1){
             ui->pushButton_6->resize(QSize(81 * scaleFactor, 16 * scaleFactor));
             ui->pushButton_6->move(QPoint(ui->pushButton->pos().x(), ui->pushButton->pos().y() - (5 * scaleFactor)));
             ui->pushButton->move(QPoint(ui->pushButton->pos().x(), ui->pushButton->pos().y() + (14 * scaleFactor)));
@@ -2084,7 +2114,7 @@ void MainWindow::setUiGeo()
         ui->pushButton_14->setStyleSheet("font-family: 'Segoe UI'; font-size: 8pt; border: 1px solid; border-color: rgb(192,192,192); border-radius: 10px; background-color: rgb(230,230,230); color: black; font: bold;");
     }
 
-    if(Bridge){
+    if(Bridge && Mmove == 1){
         ui->pushButton->resize(QSize(ui->pushButton->size().width(), ui->pushButton->size().height() - 15));
         ui->pushButton->move(QPoint(ui->pushButton->pos().x(), ui->pushButton->pos().y() + 14));
     }
@@ -2904,7 +2934,8 @@ void MainWindow::on_pushButton_10_clicked()
         isInGame = false;
         if(Bridge){
             Bridge = false;
-            pushButtonBridge();
+            if(Mmove == 1)
+                pushButtonBridge();
         }
 
         for (Player* playe : players) {
@@ -2944,6 +2975,8 @@ void MainWindow::on_pushButton_10_clicked()
         ui->pushButton_10->hide();
         ui->pushButton_11->hide();
         ui->pushButton_14->hide();
+        speedUp = false;
+        ui->pushButton_14->setStyleSheet("font-family: 'Segoe UI'; font-size: 8pt; border: 1px solid; border-color: rgb(192,192,192); border-radius: 10px; background-color: rgb(230,230,230); color: black; font: bold;");
         ui->label_3->hide();
         ui->label_4->hide();
         ui->label_5->hide();
@@ -3518,7 +3551,9 @@ void MainWindow::on_pushButton_18_clicked()
 
     Resizing();
 
-    if(Bridge && ui->pushButton->isHidden()){
+    qDebug() << tableCards[tableCardsSize - 1];
+
+    if(Bridge && ui->pushButton->isHidden() && Mmove == 1){
         pushButtonBridge();
         ui->pushButton->hide();
         if(isFullscreen){
@@ -3530,7 +3565,7 @@ void MainWindow::on_pushButton_18_clicked()
             ui->pushButton_6->move(QPoint(ui->pushButton_6->pos().x(), ui->pushButton_6->pos().y() + 5));
         }
     }
-    else if(Bridge){
+    else if(Bridge && Mmove == 1){
         pushButtonBridge();
     }
 }
@@ -3770,9 +3805,6 @@ void MainWindow::on_pushButton_6_clicked()
     players[0]->setJackKol(0);
 
     gameEnd();
-
-    Bridge = false;
-    pushButtonBridge();
 }
 
 void MainWindow::on_pushButton_14_clicked()

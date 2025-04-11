@@ -105,6 +105,14 @@ public:
 
     bool isQSM() const { return QSMode; }
 
+    bool isPoints() const { return PointsMode; }
+
+    bool isBridge() const { return Bridge; }
+
+    void setBridge(bool param) { Bridge = param; }
+
+    int getPointsX() const { return PointsX; }
+
     void lable3Style(QString param);
 
     void RemoveWidgetBot(int id) {

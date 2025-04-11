@@ -429,11 +429,14 @@ void Bot::chooseBestMove() {
     const std::string* table = mainWindow->getTable();
     const int tableSize = mainWindow->getTableSize();
 
-    std::vector<std::string> vector(cards, cards + cardsSize);
+    std::vector<std::string> vectorBot(cards, cards + cardsSize);
+    int count = std::min(tableSize, 4);
+    std::vector<std::string> vectorTable(table + (tableSize - count), table + tableSize);
 
-    GameState state = GameState(mainWindow->isMove(), mainWindow->isQSM(), mainWindow->isSecMove(), vector, mainWindow->getPlayercardsSize(),
-                                table[tableSize - 1], mainWindow->getJackchoose(), 0, 0, mainWindow->getPlayercardsSize(),
-                                mainWindow->getPlayersCount(), passCount, jackKol);
+
+    GameState state = GameState(mainWindow->isMove(), mainWindow->isQSM(), mainWindow->isBridge(), mainWindow->isPoints(), mainWindow->getPointsX(),
+                                points, mainWindow->isSecMove(), vectorBot, mainWindow->getPlayercardsSize(),vectorTable,mainWindow->getJackchoose(),
+                                0, 0, mainWindow->getPlayercardsSize(),mainWindow->getPlayersCount(), passCount, jackKol);
 
     std::vector<std::string> possibleMoves = state.getPossibleMoves();
     std::string bestMove = "";
@@ -470,7 +473,7 @@ void Bot::chooseBestMove() {
             }
         }
 
-        if(bestMove != "click_end"){
+        if(bestMove != "click_end" && bestMove != "bridge" && bestMove != "take"){
             for(int i = 0; i < cardsSize; i++){
                 if(bestMove == cards[i]){
                     it = i;
@@ -546,20 +549,36 @@ void Bot::chooseBestMove() {
                 cards[j + 1] = "";
             }
             cardsSize--;
+
+            if(mainWindow->isBridge())
+                mainWindow->setBridge(false);
+
             if(cardsSize > 0 || newtable[newtableSize - 1][0] == '6'){
                 checkForTake = 0;
                 mv = mainWindow->isMove();
                 mainWindow->secondmove();
                 mainWindow->operation(mv);
             }
-            if(newtable[newtableSize - 1][0] != '6'){
+            if(newtable[newtableSize - 1][0] != '6' && !mainWindow->isBridge()){
                 checkForEnd = true;
                 mainWindow->AutoSave();
                 mainWindow->gameEnd();
             }
         }
-        else{
+        else if(bestMove == "click_end"){
             mainWindow->endClicked();
+            mainWindow->setBridge(false);
+        }
+        else if(bestMove == "take"){
+            mainWindow->RemoveWidgetBot(0);
+            if(table[tableSize - 1][0] == '6'){
+                checkForTake = 0;
+            }
+        }
+        else{
+            checkForEnd = true;
+            mainWindow->AutoSave();
+            mainWindow->gameEnd();
         }
     }
     if(!checkForEnd){
