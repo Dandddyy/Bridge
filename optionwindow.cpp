@@ -61,7 +61,6 @@ void optionwindow::QSMslot2(bool b, bool a, std::string diff, int mvol, int svol
         ui->comboBox_4->setCurrentIndex(1);
 }
 
-
 void optionwindow::on_comboBox_2_currentIndexChanged(int index)
 {
     QString PointsMode = ui->comboBox_2->currentText();
@@ -79,20 +78,17 @@ void optionwindow::on_horizontalSlider_valueChanged(int value)
     emit Musicsignal(value);
 }
 
-
 void optionwindow::on_horizontalSlider_2_valueChanged(int value)
 {
     ui->label_8->setText(QString::number(value));
     emit Soundsignal(value);
 }
 
-
 void optionwindow::on_comboBox_3_currentIndexChanged(int index)
 {
     QString difficulty = ui->comboBox_3->currentText();
     emit Difficultysignal(difficulty);
 }
-
 
 void optionwindow::on_comboBox_4_currentIndexChanged(int index)
 {
@@ -105,4 +101,3 @@ void optionwindow::on_comboBox_4_currentIndexChanged(int index)
     }
     emit Displaysignal(isFullscreen);
 }
-

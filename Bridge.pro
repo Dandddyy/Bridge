@@ -10,6 +10,8 @@ CONFIG += c++17
 
 SOURCES += \
     bot.cpp \
+    gameclient.cpp \
+    gameserver.cpp \
     gamestate.cpp \
     human.cpp \
     main.cpp \
@@ -18,6 +20,8 @@ SOURCES += \
 
 HEADERS += \
     bot.h \
+    gameclient.h \
+    gameserver.h \
     gamestate.h \
     human.h \
     mainwindow.h \

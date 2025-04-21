@@ -1340,6 +1340,483 @@ color: orange</string>
      <string/>
     </property>
    </widget>
+   <widget class="QLabel" name="label_17">
+    <property name="geometry">
+     <rect>
+      <x>340</x>
+      <y>61</y>
+      <width>91</width>
+      <height>16</height>
+     </rect>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">font-family: &quot;Segoe UI&quot;;
+    font-size: 8pt;
+   
+
+    color: white;
+    font: bold;</string>
+    </property>
+    <property name="text">
+     <string/>
+    </property>
+    <property name="alignment">
+     <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="pushButton_21">
+    <property name="geometry">
+     <rect>
+      <x>314</x>
+      <y>58</y>
+      <width>21</width>
+      <height>21</height>
+     </rect>
+    </property>
+    <property name="cursor">
+     <cursorShape>PointingHandCursor</cursorShape>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">font-family: &quot;Segoe UI&quot;;
+    font-size: 8pt;
+    border: 1px solid;
+    border-color: rgb(192,192,192); 
+    border-radius: 5px; 
+ background-color: rgb(230,230,230);
+    color: black;
+    font: bold;</string>
+    </property>
+    <property name="text">
+     <string/>
+    </property>
+   </widget>
+   <widget class="QLabel" name="label_18">
+    <property name="geometry">
+     <rect>
+      <x>120</x>
+      <y>221</y>
+      <width>91</width>
+      <height>16</height>
+     </rect>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">font-family: &quot;Segoe UI&quot;;
+    font-size: 8pt;
+   
+
+    color: white;
+    font: bold;</string>
+    </property>
+    <property name="text">
+     <string/>
+    </property>
+    <property name="alignment">
+     <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="pushButton_22">
+    <property name="geometry">
+     <rect>
+      <x>94</x>
+      <y>218</y>
+      <width>21</width>
+      <height>21</height>
+     </rect>
+    </property>
+    <property name="cursor">
+     <cursorShape>PointingHandCursor</cursorShape>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">font-family: &quot;Segoe UI&quot;;
+    font-size: 8pt;
+    border: 1px solid;
+    border-color: rgb(192,192,192); 
+    border-radius: 5px; 
+ background-color: rgb(230,230,230);
+    color: black;
+    font: bold;</string>
+    </property>
+    <property name="text">
+     <string/>
+    </property>
+   </widget>
+   <widget class="QLabel" name="label_19">
+    <property name="geometry">
+     <rect>
+      <x>560</x>
+      <y>221</y>
+      <width>91</width>
+      <height>16</height>
+     </rect>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">font-family: &quot;Segoe UI&quot;;
+    font-size: 8pt;
+   
+
+    color: white;
+    font: bold;</string>
+    </property>
+    <property name="text">
+     <string/>
+    </property>
+    <property name="alignment">
+     <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="pushButton_23">
+    <property name="geometry">
+     <rect>
+      <x>534</x>
+      <y>218</y>
+      <width>21</width>
+      <height>21</height>
+     </rect>
+    </property>
+    <property name="cursor">
+     <cursorShape>PointingHandCursor</cursorShape>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">font-family: &quot;Segoe UI&quot;;
+    font-size: 8pt;
+    border: 1px solid;
+    border-color: rgb(192,192,192); 
+    border-radius: 5px; 
+ background-color: rgb(230,230,230);
+    color: black;
+    font: bold;</string>
+    </property>
+    <property name="text">
+     <string/>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="pushButton_24">
+    <property name="geometry">
+     <rect>
+      <x>417</x>
+      <y>30</y>
+      <width>25</width>
+      <height>25</height>
+     </rect>
+    </property>
+    <property name="cursor">
+     <cursorShape>PointingHandCursor</cursorShape>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">font-family: &quot;Segoe UI&quot;;
+    font-size: 8pt;
+    border: 1px solid;
+    border-color: rgb(192,192,192); 
+    border-radius: 5px; 
+ background-color: rgb(230,230,230);
+    color: black;
+    font: bold;</string>
+    </property>
+    <property name="text">
+     <string/>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="pushButton_25">
+    <property name="geometry">
+     <rect>
+      <x>197</x>
+      <y>190</y>
+      <width>25</width>
+      <height>25</height>
+     </rect>
+    </property>
+    <property name="cursor">
+     <cursorShape>PointingHandCursor</cursorShape>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">font-family: &quot;Segoe UI&quot;;
+    font-size: 8pt;
+    border: 1px solid;
+    border-color: rgb(192,192,192); 
+    border-radius: 5px; 
+ background-color: rgb(230,230,230);
+    color: black;
+    font: bold;</string>
+    </property>
+    <property name="text">
+     <string/>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="pushButton_26">
+    <property name="geometry">
+     <rect>
+      <x>637</x>
+      <y>190</y>
+      <width>25</width>
+      <height>25</height>
+     </rect>
+    </property>
+    <property name="cursor">
+     <cursorShape>PointingHandCursor</cursorShape>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">font-family: &quot;Segoe UI&quot;;
+    font-size: 8pt;
+    border: 1px solid;
+    border-color: rgb(192,192,192); 
+    border-radius: 5px; 
+ background-color: rgb(230,230,230);
+    color: black;
+    font: bold;</string>
+    </property>
+    <property name="text">
+     <string/>
+    </property>
+   </widget>
+   <widget class="QLabel" name="label_20">
+    <property name="geometry">
+     <rect>
+      <x>40</x>
+      <y>20</y>
+      <width>161</width>
+      <height>21</height>
+     </rect>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">font-family: &quot;Segoe UI&quot;;
+    font-size: 12pt;
+   
+
+    color: white;
+    font: bold;</string>
+    </property>
+    <property name="text">
+     <string>IP: </string>
+    </property>
+    <property name="alignment">
+     <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="pushButton_27">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>20</y>
+      <width>21</width>
+      <height>21</height>
+     </rect>
+    </property>
+    <property name="cursor">
+     <cursorShape>PointingHandCursor</cursorShape>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">font-family: &quot;Segoe UI&quot;;
+    font-size: 8pt;
+    border: 1px solid;
+    border-color: rgb(192,192,192); 
+    border-radius: 5px; 
+ background-color: rgb(230,230,230);
+    color: black;
+    font: bold;</string>
+    </property>
+    <property name="text">
+     <string/>
+    </property>
+   </widget>
+   <widget class="QLineEdit" name="lineEdit_2">
+    <property name="geometry">
+     <rect>
+      <x>240</x>
+      <y>135</y>
+      <width>191</width>
+      <height>27</height>
+     </rect>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">font-family: &quot;Segoe UI&quot;;
+    font-size: 10pt;
+    border: 1px solid;
+    border-color: rgb(192,192,192); 
+    border-radius: 10px; 
+ background-color: rgb(230,230,230);
+    color: black;
+    font: bold;</string>
+    </property>
+   </widget>
+   <widget class="QLineEdit" name="lineEdit_3">
+    <property name="geometry">
+     <rect>
+      <x>240</x>
+      <y>205</y>
+      <width>191</width>
+      <height>27</height>
+     </rect>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">font-family: &quot;Segoe UI&quot;;
+    font-size: 10pt;
+    border: 1px solid;
+    border-color: rgb(192,192,192); 
+    border-radius: 10px; 
+ background-color: rgb(230,230,230);
+    color: black;
+    font: bold;</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="label_21">
+    <property name="geometry">
+     <rect>
+      <x>240</x>
+      <y>115</y>
+      <width>41</width>
+      <height>16</height>
+     </rect>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">font-family: &quot;Segoe UI&quot;;
+    font-size: 10pt;
+   
+
+    color: white;
+    font: bold;</string>
+    </property>
+    <property name="text">
+     <string>IP: </string>
+    </property>
+    <property name="alignment">
+     <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
+    </property>
+   </widget>
+   <widget class="QLabel" name="label_22">
+    <property name="geometry">
+     <rect>
+      <x>240</x>
+      <y>185</y>
+      <width>71</width>
+      <height>16</height>
+     </rect>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">font-family: &quot;Segoe UI&quot;;
+    font-size: 10pt;
+   
+
+    color: white;
+    font: bold;</string>
+    </property>
+    <property name="text">
+     <string>Name:</string>
+    </property>
+    <property name="alignment">
+     <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="pushButton_28">
+    <property name="geometry">
+     <rect>
+      <x>275</x>
+      <y>265</y>
+      <width>121</width>
+      <height>41</height>
+     </rect>
+    </property>
+    <property name="cursor">
+     <cursorShape>PointingHandCursor</cursorShape>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">font-family: &quot;Segoe UI&quot;;
+    font-size: 10pt;
+    border: 2px solid;
+    border-color: black; 
+    border-radius: 20px; 
+ background-color: white;
+    color: black;
+    font: bold;</string>
+    </property>
+    <property name="text">
+     <string>Connect</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="label_23">
+    <property name="geometry">
+     <rect>
+      <x>285</x>
+      <y>130</y>
+      <width>101</width>
+      <height>101</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string/>
+    </property>
+   </widget>
+   <widget class="QLabel" name="label_24">
+    <property name="geometry">
+     <rect>
+      <x>285</x>
+      <y>240</y>
+      <width>101</width>
+      <height>31</height>
+     </rect>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">font-family: &quot;Segoe UI&quot;;
+    font-size: 12pt;
+   
+
+    color: white;
+    font: bold;</string>
+    </property>
+    <property name="text">
+     <string>Connecting...</string>
+    </property>
+    <property name="alignment">
+     <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
+    </property>
+   </widget>
+   <widget class="QLabel" name="label_25">
+    <property name="geometry">
+     <rect>
+      <x>270</x>
+      <y>180</y>
+      <width>131</width>
+      <height>31</height>
+     </rect>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">font-family: &quot;Segoe UI&quot;;
+    font-size: 12pt;
+   
+
+    color: white;
+    font: bold;</string>
+    </property>
+    <property name="text">
+     <string>Point Limit:</string>
+    </property>
+    <property name="alignment">
+     <set>Qt::AlignCenter</set>
+    </property>
+   </widget>
+   <widget class="QLabel" name="label_26">
+    <property name="geometry">
+     <rect>
+      <x>230</x>
+      <y>220</y>
+      <width>211</width>
+      <height>31</height>
+     </rect>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">font-family: &quot;Segoe UI&quot;;
+    font-size: 12pt;
+   
+
+    color: white;
+    font: bold;</string>
+    </property>
+    <property name="text">
+     <string>Queen of Spades Mode:</string>
+    </property>
+    <property name="alignment">
+     <set>Qt::AlignCenter</set>
+    </property>
+   </widget>
    <zorder>line_2</zorder>
    <zorder>line</zorder>
    <zorder>label_9</zorder>
@@ -1390,6 +1867,26 @@ color: orange</string>
    <zorder>label_16</zorder>
    <zorder>pushButton_6</zorder>
    <zorder>pushButton_14</zorder>
+   <zorder>label_17</zorder>
+   <zorder>pushButton_21</zorder>
+   <zorder>label_18</zorder>
+   <zorder>pushButton_22</zorder>
+   <zorder>label_19</zorder>
+   <zorder>pushButton_23</zorder>
+   <zorder>pushButton_24</zorder>
+   <zorder>pushButton_25</zorder>
+   <zorder>pushButton_26</zorder>
+   <zorder>label_20</zorder>
+   <zorder>pushButton_27</zorder>
+   <zorder>lineEdit_2</zorder>
+   <zorder>lineEdit_3</zorder>
+   <zorder>label_21</zorder>
+   <zorder>label_22</zorder>
+   <zorder>pushButton_28</zorder>
+   <zorder>label_23</zorder>
+   <zorder>label_24</zorder>
+   <zorder>label_25</zorder>
+   <zorder>label_26</zorder>
   </widget>
  </widget>
  <resources/>

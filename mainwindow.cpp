@@ -9,6 +9,8 @@
 #include "player.h"
 #include "human.h"
 #include "bot.h"
+#include "gameserver.h"
+#include "gameclient.h"
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -87,18 +89,39 @@ MainWindow::MainWindow(QWidget *parent)
     ui->pushButton_17->hide();
     ui->pushButton_18->hide();
     ui->pushButton_19->hide();
+    ui->label_20->hide();
     ui->pushButton_20->hide();
+    ui->pushButton_27->hide();
     ui->lineEdit->hide();
     ui->lineEdit->setPlaceholderText("Name");
     ui->lineEdit->setMaxLength(10);
+    ui->lineEdit_3->setMaxLength(10);
     ui->comboBox_2->hide();
     ui->comboBox_3->hide();
     ui->comboBox_4->hide();
     ui->comboBox_5->hide();
     ui->comboBox_6->hide();
     ui->comboBox_7->hide();
+    ui->pushButton_21->hide();
+    ui->pushButton_22->hide();
+    ui->pushButton_23->hide();
+    ui->pushButton_24->hide();
+    ui->pushButton_25->hide();
+    ui->pushButton_26->hide();
+    ui->label_17->hide();
+    ui->label_18->hide();
+    ui->label_19->hide();
     ui->label_14->hide();
     ui->label_15->hide();
+    ui->label_21->hide();
+    ui->label_22->hide();
+    ui->lineEdit_2->hide();
+    ui->lineEdit_3->hide();
+    ui->pushButton_28->hide();
+    ui->label_23->hide();
+    ui->label_24->hide();
+    ui->label_25->hide();
+    ui->label_26->hide();
     ui->horizontalLayoutWidget->lower();
     ui->horizontalLayoutWidget_2->lower();
     ui->horizontalLayoutWidget_3->lower();
@@ -133,6 +156,16 @@ MainWindow::MainWindow(QWidget *parent)
     ui->pushButton_13->setIconSize(QSize(21,21));
     QIcon ic5(":/img/PNG-cards-1.3/fast-forward.png");
     ui->pushButton_14->setIcon(ic5);
+    QIcon ic6(":/img/PNG-cards-1.3/kick.png");
+    ui->pushButton_21->setIcon(ic6);
+    ui->pushButton_22->setIcon(ic6);
+    ui->pushButton_23->setIcon(ic6);
+    QIcon ic7(":/img/PNG-cards-1.3/swap.png");
+    ui->pushButton_24->setIcon(ic7);
+    ui->pushButton_25->setIcon(ic7);
+    ui->pushButton_26->setIcon(ic7);
+    QIcon ic8(":/img/PNG-cards-1.3/copy.png");
+    ui->pushButton_27->setIcon(ic8);
 
     connect(window, &optionwindow::QSMsignal, this, &MainWindow::QSMslot);
     connect(window, &optionwindow::Pointssignal, this, &MainWindow::Pointsslot);
@@ -189,6 +222,392 @@ MainWindow::MainWindow(QWidget *parent)
 MainWindow::~MainWindow()
 {
     delete ui;
+}
+
+QLabel* MainWindow::getLabel()
+{
+    if(ui->comboBox_2->currentIndex() == 1 && ui->label_17->text() == ""){
+        ui->pushButton_21->show();
+        ui->label_17->show();
+        startCheck(0);
+        return ui->label_17;
+    }
+    else if(ui->comboBox_5->currentIndex() == 1 && ui->label_18->text() == ""){
+        ui->pushButton_22->show();
+        ui->label_18->show();
+        startCheck(0);
+        return ui->label_18;
+    }
+    else{
+        ui->pushButton_23->show();
+        ui->label_19->show();
+        startCheck(0);
+        return ui->label_19;
+    }
+}
+
+void MainWindow::ClientDisconnected(QLabel *label)
+{
+    if(ui->label_17 == label){
+        ui->label_17->hide();
+        ui->label_17->setText("");
+        ui->pushButton_21->hide();
+    }
+    else if(ui->label_18 == label){
+        ui->label_18->hide();
+        ui->label_18->setText("");
+        ui->pushButton_22->hide();
+    }
+    else if(ui->label_19 == label){
+        ui->label_19->hide();
+        ui->label_19->setText("");
+        ui->pushButton_23->hide();
+    }
+    startCheck(0);
+}
+
+void MainWindow::connectionError(const QString &error)
+{
+    cleaner(isShuffl);
+    ui->lineEdit->hide();
+
+    ui->comboBox_2->hide();
+    ui->comboBox_3->hide();
+    ui->comboBox_5->hide();
+    ui->comboBox_4->hide();
+    ui->comboBox_7->hide();
+    ui->comboBox_6->hide();
+    ui->label_25->hide();
+    ui->label_26->hide();
+    ui->label_17->setText("");
+    ui->label_18->setText("");
+    ui->label_19->setText("");
+
+    ui->pushButton_15->hide();
+    ui->pushButton_16->hide();
+    ui->pushButton_17->hide();
+    ui->pushButton_24->hide();
+    ui->pushButton_25->hide();
+    ui->pushButton_26->hide();
+    ui->label_23->hide();
+    ui->label_24->hide();
+
+    ui->pushButton_11->show();
+    ui->pushButton_11->move(630, 20);
+    ui->label_21->show();
+    ui->label_22->show();
+    ui->lineEdit_2->show();
+    ui->lineEdit_3->show();
+    ui->pushButton_28->show();
+    ui->pushButton_19->show();
+
+    if(movie){
+        movie->stop();
+        delete movie;
+        movie = nullptr;
+    }
+
+    QMessageBox msgBox(this);
+    msgBox.setStandardButtons(QMessageBox::Ok);
+    msgBox.setDefaultButton(QMessageBox::Ok);
+    foreach (QPushButton *button, msgBox.findChildren<QPushButton*>()) {
+        button->setCursor(Qt::PointingHandCursor);
+    }
+    msgBox.setWindowTitle("Error");
+    msgBox.setStyleSheet(massBoxStyle);
+    msgBox.setText(error);
+    msgBox.exec();
+    clickedSound();
+}
+
+void MainWindow::fromHostMessage(const QString &message)
+{
+    QMessageBox msgBox(this);
+    msgBox.setStandardButtons(QMessageBox::Ok);
+    msgBox.setDefaultButton(QMessageBox::Ok);
+    foreach (QPushButton *button, msgBox.findChildren<QPushButton*>()) {
+        button->setCursor(Qt::PointingHandCursor);
+    }
+    msgBox.setWindowTitle("Message");
+    msgBox.setStyleSheet(massBoxStyle);
+    msgBox.setText(message);
+    msgBox.exec();
+    clickedSound();
+}
+
+QJsonObject MainWindow::hubJson(QLabel *label)
+{
+    QJsonObject json;
+    json["big1"] = ui->pushButton_15->pos().x();
+    json["big2"] = ui->pushButton_16->pos().x();
+    json["big3"] = ui->pushButton_17->pos().x();
+    json["uper1"] = ui->comboBox_2->currentIndex();
+    json["uper2"] = ui->comboBox_5->currentIndex();
+    json["uper3"] = ui->comboBox_7->currentIndex();
+    if(label == ui->label_17){
+        json["lower1"] = 2;
+        json["lower2"] = ui->comboBox_4->currentIndex();
+        json["lower3"] = ui->comboBox_6->currentIndex();
+    }
+    else if(label == ui->label_18){
+        json["lower1"] = ui->comboBox_3->currentIndex();
+        json["lower2"] = 2;
+        json["lower3"] = ui->comboBox_6->currentIndex();
+    }
+    else{
+        json["lower1"] = ui->comboBox_3->currentIndex();
+        json["lower2"] = ui->comboBox_4->currentIndex();
+        json["lower3"] = 2;
+    }
+    json["label1"] = ui->label_17->text();
+    json["label2"] = ui->label_18->text();
+    json["label3"] = ui->label_19->text();
+    json["host"] = ui->lineEdit->text();
+    json["points"] = PointsMode;
+    json["QSM"] = QSMode;
+    return json;
+}
+
+void MainWindow::parseHub(const QJsonObject &json)
+{
+    ui->pushButton_15->hide();
+    ui->pushButton_16->hide();
+    ui->pushButton_17->hide();
+    ui->pushButton_18->hide();
+    ui->pushButton_19->hide();
+    ui->label_20->hide();
+    ui->pushButton_20->hide();
+    ui->pushButton_27->hide();
+    ui->lineEdit->hide();
+    ui->comboBox_2->hide();
+    ui->comboBox_3->hide();
+    ui->comboBox_4->hide();
+    ui->comboBox_5->hide();
+    ui->comboBox_6->hide();
+    ui->comboBox_7->hide();
+    ui->pushButton_21->hide();
+    ui->pushButton_22->hide();
+    ui->pushButton_23->hide();
+    ui->label_17->hide();
+    ui->label_18->hide();
+    ui->label_19->hide();
+    ui->pushButton_24->hide();
+    ui->pushButton_25->hide();
+    ui->pushButton_26->hide();
+    ui->label_23->hide();
+    ui->label_24->hide();
+
+    ui->lineEdit->setDisabled(true);
+
+    ui->comboBox_2->setDisabled(true);
+    ui->comboBox_3->setDisabled(true);
+    ui->comboBox_5->setDisabled(true);
+    ui->comboBox_4->setDisabled(true);
+    ui->comboBox_7->setDisabled(true);
+    ui->comboBox_6->setDisabled(true);
+    ui->label_17->setText("");
+    ui->label_18->setText("");
+    ui->label_19->setText("");
+
+    ui->pushButton_15->setDisabled(true);
+    ui->pushButton_16->setDisabled(true);
+    ui->pushButton_17->setDisabled(true);
+    ui->pushButton_15->show();
+    ui->pushButton_16->show();
+    ui->pushButton_17->show();
+    ui->lineEdit->show();
+    ui->label_25->show();
+    ui->label_26->show();
+    ui->pushButton_19->show();
+    ui->pushButton_11->show();
+    ui->pushButton_11->move(630, 20);
+
+    ui->label_17->move(314, 61);
+    ui->label_18->move(94, 221);
+    ui->label_19->move(534, 221);
+
+    if(movie){
+        movie->stop();
+        delete movie;
+        movie = nullptr;
+    }
+
+    if(json["lower1"].toInt() == 2){
+        QIcon ic4(":/img/PNG-cards-1.3/cross.png");
+        ui->pushButton_15->setIcon(ic4);
+        ui->pushButton_15->move(257, 30);
+        ui->comboBox_2->setCurrentIndex(1);
+        ui->comboBox_2->show();
+        ui->label_17->setText(json["host"].toString());
+        ui->label_17->show();
+        ui->pushButton_24->show();
+
+        hubParseHelper(ui->pushButton_17, QPoint(530, 190), QPoint(477, 190), json["big2"].toInt(), ui->pushButton_26, ui->comboBox_7,
+                       ui->comboBox_6, ui->label_19, json["uper2"].toInt(), json["lower2"].toInt(), json["label2"].toString());
+        hubParseHelper(ui->pushButton_16, QPoint(90, 190), QPoint(37, 190), json["big3"].toInt(), ui->pushButton_25, ui->comboBox_5,
+                       ui->comboBox_4, ui->label_18, json["uper3"].toInt(), json["lower3"].toInt(), json["label3"].toString());
+
+        ui->lineEdit->setText(json["label1"].toString());
+    }
+    else if(json["lower2"].toInt() == 2){
+        QIcon ic4(":/img/PNG-cards-1.3/cross.png");
+        ui->pushButton_17->setIcon(ic4);
+        ui->pushButton_17->move(477, 190);
+        ui->comboBox_7->setCurrentIndex(1);
+        ui->comboBox_7->show();
+        ui->label_19->setText(json["host"].toString());
+        ui->label_19->show();
+        ui->pushButton_26->show();
+
+        hubParseHelper(ui->pushButton_16, QPoint(90, 190), QPoint(37, 190), json["big1"].toInt(), ui->pushButton_25, ui->comboBox_5,
+                       ui->comboBox_4, ui->label_18, json["uper1"].toInt(), json["lower1"].toInt(), json["label1"].toString());
+        hubParseHelper(ui->pushButton_15, QPoint(310, 30), QPoint(257, 30), json["big3"].toInt(), ui->pushButton_24, ui->comboBox_2,
+                       ui->comboBox_3, ui->label_17, json["uper3"].toInt(), json["lower3"].toInt(), json["label3"].toString());
+
+        ui->lineEdit->setText(json["label2"].toString());
+    }
+    else{
+        QIcon ic4(":/img/PNG-cards-1.3/cross.png");
+        ui->pushButton_16->setIcon(ic4);
+        ui->pushButton_16->move(37, 190);
+        ui->comboBox_5->setCurrentIndex(1);
+        ui->comboBox_5->show();
+        ui->label_18->setText(json["host"].toString());
+        ui->label_18->show();
+        ui->pushButton_25->show();
+
+        hubParseHelper(ui->pushButton_15, QPoint(310, 30), QPoint(257, 30), json["big2"].toInt(), ui->pushButton_24, ui->comboBox_2,
+                       ui->comboBox_3, ui->label_17, json["uper2"].toInt(), json["lower2"].toInt(), json["label2"].toString());
+        hubParseHelper(ui->pushButton_17, QPoint(530, 190), QPoint(477, 190), json["big1"].toInt(), ui->pushButton_26, ui->comboBox_7,
+                       ui->comboBox_6, ui->label_19, json["uper1"].toInt(), json["lower1"].toInt(), json["label1"].toString());
+
+        ui->lineEdit->setText(json["label3"].toString());
+    }
+    if(json["points"].toBool())
+        ui->label_25->setText("Point Limit: 225");
+    else
+        ui->label_25->setText("Point Limit: 125");
+
+    if(json["QSM"].toBool())
+        ui->label_26->setText("Queen of Spades Mode: On");
+    else
+        ui->label_26->setText("Queen of Spades Mode: Off");
+
+    ui->comboBox_2->blockSignals(false);
+    ui->comboBox_3->blockSignals(false);
+    ui->comboBox_4->blockSignals(false);
+    ui->comboBox_5->blockSignals(false);
+    ui->comboBox_6->blockSignals(false);
+    ui->comboBox_7->blockSignals(false);
+}
+
+void MainWindow::parseSwap(QLabel *label, QString &button)
+{
+    ui->comboBox_4->blockSignals(true);
+    ui->comboBox_5->blockSignals(true);
+    ui->comboBox_6->blockSignals(true);
+    ui->comboBox_7->blockSignals(true);
+
+    if(label == ui->label_17){
+        if(button == "1"){
+            swapCombobox(ui->comboBox_5, ui->comboBox_7, ui->comboBox_4, ui->comboBox_6, ui->pushButton_16, ui->pushButton_17, ui->label_18,
+                         ui->label_19, ui->pushButton_22, ui->pushButton_23, ui->pushButton_25, ui->pushButton_26, 90, 190, 37, 190, 530, 190, 477, 190);
+        }
+        else if(button == "2"){
+            swapCombobox(ui->comboBox_7, ui->comboBox_2, ui->comboBox_6, ui->comboBox_3, ui->pushButton_17, ui->pushButton_15, ui->label_19,
+                         ui->label_17, ui->pushButton_23, ui->pushButton_21, ui->pushButton_26, ui->pushButton_24, 530, 190, 477, 190, 310, 30, 257, 30);
+        }
+        else if(button == "3"){
+            swapCombobox(ui->comboBox_5, ui->comboBox_2, ui->comboBox_4, ui->comboBox_3, ui->pushButton_16, ui->pushButton_15, ui->label_18,
+                         ui->label_17, ui->pushButton_22, ui->pushButton_21, ui->pushButton_25, ui->pushButton_24, 90, 190, 37, 190, 310, 30, 257, 30);
+        }
+    }
+    else if(label == ui->label_18){
+        if(button == "1"){
+            swapCombobox(ui->comboBox_5, ui->comboBox_7, ui->comboBox_4, ui->comboBox_6, ui->pushButton_16, ui->pushButton_17, ui->label_18,
+                         ui->label_19, ui->pushButton_22, ui->pushButton_23, ui->pushButton_25, ui->pushButton_26, 90, 190, 37, 190, 530, 190, 477, 190);
+        }
+        else if(button == "2"){
+            swapCombobox(ui->comboBox_5, ui->comboBox_2, ui->comboBox_4, ui->comboBox_3, ui->pushButton_16, ui->pushButton_15, ui->label_18,
+                         ui->label_17, ui->pushButton_22, ui->pushButton_21, ui->pushButton_25, ui->pushButton_24, 90, 190, 37, 190, 310, 30, 257, 30);
+        }
+        else if(button == "3"){
+            swapCombobox(ui->comboBox_5, ui->comboBox_7, ui->comboBox_4, ui->comboBox_6, ui->pushButton_16, ui->pushButton_17, ui->label_18,
+                         ui->label_19, ui->pushButton_22, ui->pushButton_23, ui->pushButton_25, ui->pushButton_26, 90, 190, 37, 190, 530, 190, 477, 190);
+            swapCombobox(ui->comboBox_5, ui->comboBox_2, ui->comboBox_4, ui->comboBox_3, ui->pushButton_16, ui->pushButton_15, ui->label_18,
+                         ui->label_17, ui->pushButton_22, ui->pushButton_21, ui->pushButton_25, ui->pushButton_24, 90, 190, 37, 190, 310, 30, 257, 30);
+        }
+    }
+    else if(label == ui->label_19){
+        if(button == "1"){
+            swapCombobox(ui->comboBox_5, ui->comboBox_7, ui->comboBox_4, ui->comboBox_6, ui->pushButton_16, ui->pushButton_17, ui->label_18,
+                         ui->label_19, ui->pushButton_22, ui->pushButton_23, ui->pushButton_25, ui->pushButton_26, 90, 190, 37, 190, 530, 190, 477, 190);
+        }
+        else if(button == "2"){
+            swapCombobox(ui->comboBox_5, ui->comboBox_7, ui->comboBox_4, ui->comboBox_6, ui->pushButton_16, ui->pushButton_17, ui->label_18,
+                         ui->label_19, ui->pushButton_22, ui->pushButton_23, ui->pushButton_25, ui->pushButton_26, 90, 190, 37, 190, 530, 190, 477, 190);
+            swapCombobox(ui->comboBox_7, ui->comboBox_2, ui->comboBox_6, ui->comboBox_3, ui->pushButton_17, ui->pushButton_15, ui->label_19,
+                         ui->label_17, ui->pushButton_23, ui->pushButton_21, ui->pushButton_26, ui->pushButton_24, 530, 190, 477, 190, 310, 30, 257, 30);
+        }
+        else if(button == "3"){
+            swapCombobox(ui->comboBox_7, ui->comboBox_2, ui->comboBox_6, ui->comboBox_3, ui->pushButton_17, ui->pushButton_15, ui->label_19,
+                         ui->label_17, ui->pushButton_23, ui->pushButton_21, ui->pushButton_26, ui->pushButton_24, 530, 190, 477, 190, 310, 30, 257, 30);
+        }
+    }
+
+    ui->comboBox_4->blockSignals(false);
+    ui->comboBox_5->blockSignals(false);
+    ui->comboBox_6->blockSignals(false);
+    ui->comboBox_7->blockSignals(false);
+
+    server->HubChanged();
+}
+
+void MainWindow::hubParseHelper(QPushButton *bigButton, QPoint firstCords, QPoint secondCords, int jsonBig, QPushButton *swap, QComboBox *upper,
+                    QComboBox *lower, QLabel *label, int jsonUpper, int jsonLower, const QString &jsonLabel)
+{
+    if(jsonBig == 90 || jsonBig == 530 || jsonBig == 310){
+        QIcon ic4(":/img/PNG-cards-1.3/plus.png");
+        bigButton->setIcon(ic4);
+        bigButton->move(firstCords);
+    }
+    else{
+        QIcon ic4(":/img/PNG-cards-1.3/cross.png");
+        bigButton->setIcon(ic4);
+        bigButton->move(secondCords);
+        swap->show();
+        upper->setCurrentIndex(jsonUpper);
+        upper->show();
+        if(jsonUpper == 0){
+            lower->setCurrentIndex(jsonLower);
+            lower->show();
+        }
+        else{
+            if(jsonLabel != ""){
+                label->setText(jsonLabel);
+                label->show();
+            }
+        }
+    }
+}
+
+void MainWindow::startCheck(int index)
+{
+    if(index == 1){
+        ui->pushButton_18->setStyleSheet("font-family: 'Segoe UI'; font-size: 13pt; border: 1px solid; border-color: rgb(192,192,192); border-radius: 20px; color: white; font: bold;");
+        ui->pushButton_18->setDisabled(true);
+    }
+    else if((ui->comboBox_2->currentIndex() == 0 || !ui->pushButton_21->isHidden() || ui->pushButton_15->pos().x() == 310) &&
+               (ui->comboBox_5->currentIndex() == 0 || !ui->pushButton_22->isHidden() || ui->pushButton_16->pos().x() == 90) &&
+               (ui->comboBox_7->currentIndex() == 0 || !ui->pushButton_23->isHidden() || ui->pushButton_17->pos().x() == 530) &&
+               ui->lineEdit->text() != ""){
+        ui->pushButton_18->setStyleSheet("font-family: 'Segoe UI'; font-size: 13pt; border: 2px solid; border-color: black; border-radius: 20px; background-color: white; color: black; font: bold;");
+        ui->pushButton_18->setDisabled(false);
+    }
+    else{
+        ui->pushButton_18->setStyleSheet("font-family: 'Segoe UI'; font-size: 13pt; border: 1px solid; border-color: rgb(192,192,192); border-radius: 20px; color: white; font: bold;");
+        ui->pushButton_18->setDisabled(true);
+    }
 }
 
 int MainWindow::getPlayercardsSize() const
@@ -664,7 +1083,7 @@ void MainWindow::shuffling()
     ui->label_4->hide();
 }
 
-void MainWindow::cleaner()
+void MainWindow::cleaner(bool sh)
 {
     for(Player* playe : players){
         playe->deleteButtons();
@@ -673,7 +1092,7 @@ void MainWindow::cleaner()
         playe->setPass(0);
     }
 
-    if(ColodCardsSize == 0){
+    if(ColodCardsSize == 0 && sh){
         delete ColodButtons[0];
         ColodButtons[0] = nullptr;
     }
@@ -863,6 +1282,11 @@ void MainWindow::gameEnd()
             msgBox.setText(QString::fromStdString(massage));
             msgBox.exec();
             clickedSound();
+
+            if(server){
+                delete server;
+                server = nullptr;
+            }
 
             cleaner();
 
@@ -1510,7 +1934,6 @@ void MainWindow::operation(int mv)
         default:
             players[mv - 1]->setPass(0);
             break;
-
         }
     }
 }
@@ -1819,11 +2242,14 @@ void MainWindow::Resizing(QString label2Str)
             scaleWidget(ui->label_12);
             ui->label_12->setStyleSheet(QString("font-weight: %1; font-family: 'Segoe UI Black'; font-size: %2pt; color: #c5c5c5").arg(900 * scaleFactor).arg(11 * scaleFactor));
             scaleWidget(ui->label_13);
-            if(difficulty == "Middle"){
-                ui->label_13->setStyleSheet(QString("font-weight: %1; font-size: %2pt; font-family: 'Segoe UI Black'; color: orange").arg(900 * scaleFactor).arg(11 * scaleFactor));
-            }
-            else if(difficulty == "Hard"){
-                ui->label_13->setStyleSheet(QString("font-weight: %1; font-size: %2pt; font-family: 'Segoe UI Black'; color: red").arg(900 * scaleFactor).arg(11 * scaleFactor));
+            if(!players.empty()){
+                std::string dif = players[1]->getDifficulty();
+                if(dif == "Middle"){
+                    ui->label_13->setStyleSheet(QString("font-weight: %1; font-size: %2pt; font-family: 'Segoe UI Black'; color: orange").arg(900 * scaleFactor).arg(11 * scaleFactor));
+                }
+                else if(dif == "Hard"){
+                    ui->label_13->setStyleSheet(QString("font-weight: %1; font-size: %2pt; font-family: 'Segoe UI Black'; color: red").arg(900 * scaleFactor).arg(11 * scaleFactor));
+                }
             }
             scaleWidget(ui->pushButton);
             scaleFontnRadiusWidget(ui->pushButton, 8, 3);
@@ -2131,12 +2557,16 @@ void MainWindow::setUiGeo()
     curText.replace(regex, QString("font-size: %1pt").arg(newFontSize));
     ui->label_15->setText(curText);
 
-    if(difficulty == "Middle"){
-        ui->label_13->setStyleSheet(QString("font-weight: %1; font-size: %2pt; font-family: 'Segoe UI Black'; color: orange").arg(900).arg(11));
+    if(!players.empty()){
+        std::string dif = players[1]->getDifficulty();
+        if(dif == "Middle"){
+            ui->label_13->setStyleSheet(QString("font-weight: %1; font-size: %2pt; font-family: 'Segoe UI Black'; color: orange").arg(900).arg(11));
+        }
+        else if(dif == "Hard"){
+            ui->label_13->setStyleSheet(QString("font-weight: %1; font-size: %2pt; font-family: 'Segoe UI Black'; color: red").arg(900).arg(11));
+        }
     }
-    else if(difficulty == "Hard"){
-        ui->label_13->setStyleSheet(QString("font-weight: %1; font-size: %2pt; font-family: 'Segoe UI Black'; color: red").arg(900).arg(11));
-    }
+
     ui->centralwidget->resize(savedMainWindowSize);
 
     ui->verticalLayoutWidget->setGeometry(savedVLayoutGeo);
@@ -2472,7 +2902,9 @@ void MainWindow::playerCreator()
     ui->pushButton_17->hide();
     ui->pushButton_18->hide();
     ui->pushButton_19->hide();
+    ui->label_20->hide();
     ui->pushButton_20->hide();
+    ui->pushButton_27->hide();
     ui->lineEdit->hide();
     ui->comboBox_2->hide();
     ui->comboBox_3->hide();
@@ -2480,6 +2912,15 @@ void MainWindow::playerCreator()
     ui->comboBox_5->hide();
     ui->comboBox_6->hide();
     ui->comboBox_7->hide();
+    ui->pushButton_21->hide();
+    ui->pushButton_22->hide();
+    ui->pushButton_23->hide();
+    ui->label_17->hide();
+    ui->label_18->hide();
+    ui->label_19->hide();
+    ui->pushButton_24->hide();
+    ui->pushButton_25->hide();
+    ui->pushButton_26->hide();
 
     isInGame = true;
 
@@ -2860,6 +3301,9 @@ void MainWindow::QSMslot(QString text)
         QSMode = false;
     }
     OptionsSave();
+
+    if(server)
+        server->HubChanged();
 }
 
 void MainWindow::Pointsslot(QString text)
@@ -2871,6 +3315,9 @@ void MainWindow::Pointsslot(QString text)
         PointsMode = false;
     }
     OptionsSave();
+
+    if(server)
+        server->HubChanged();
 }
 
 void MainWindow::Difficultyslot(QString text)
@@ -2916,6 +3363,11 @@ void MainWindow::Displayslot(bool val)
 void MainWindow::on_pushButton_10_clicked()
 {   
     clickedSound();
+    if(server){
+        delete server;
+        server = nullptr;
+    }
+
     QMessageBox YesNomsgBox(this);
     YesNomsgBox.setWindowTitle("Quit");
     YesNomsgBox.setText("Are you sure?");
@@ -3034,16 +3486,23 @@ void MainWindow::on_pushButton_12_clicked()
 
     ui->lineEdit->setDisabled(false);
 
-    ui->comboBox_2->setDisabled(true);
+    ui->comboBox_2->setDisabled(false);
     ui->comboBox_3->setDisabled(false);
-    ui->comboBox_5->setDisabled(true);
+    ui->comboBox_5->setDisabled(false);
     ui->comboBox_4->setDisabled(false);
-    ui->comboBox_7->setDisabled(true);
+    ui->comboBox_7->setDisabled(false);
     ui->comboBox_6->setDisabled(false);
+    ui->label_17->setText("");
+    ui->label_18->setText("");
+    ui->label_19->setText("");
 
     ui->pushButton_15->setDisabled(false);
     ui->pushButton_16->setDisabled(false);
     ui->pushButton_17->setDisabled(false);
+
+    ui->label_17->move(340, 61);
+    ui->label_18->move(120, 221);
+    ui->label_19->move(560, 221);
 
     ui->pushButton_15->setStyleSheet("font-family: 'Segoe UI'; font-size: 8pt; border: 1px solid; border-color: rgb(192,192,192); border-radius: 10px; background-color: rgb(230,230,230); color: black; font: bold;");
     ui->pushButton_16->setStyleSheet("font-family: 'Segoe UI'; font-size: 8pt; border: 1px solid; border-color: rgb(192,192,192); border-radius: 10px; background-color: rgb(230,230,230); color: black; font: bold;");
@@ -3097,14 +3556,37 @@ void MainWindow::on_pushButton_12_clicked()
     ui->pushButton_17->move(530, 190);
     ui->pushButton_18->show();
     ui->pushButton_19->show();
+    ui->pushButton_27->show();
+    ui->label_20->show();
     ui->lineEdit->show();
     ui->pushButton_18->setStyleSheet("font-family: 'Segoe UI'; font-size: 13pt; border: 1px solid; border-color: rgb(192,192,192); border-radius: 20px; color: white; font: bold;");
     ui->pushButton_18->setDisabled(true);
+
+    server = new GameServer();
+    QString ip = server->startServer();
+    server->setMain(this);
+    if(ip == ""){
+        ui->label_20->hide();
+        ui->pushButton_27->hide();
+    }
+    else{
+        ui->label_20->setText("IP: " + ip);
+    }
 }
 
 void MainWindow::on_pushButton_19_clicked()
 {
     clickedSound();
+
+    if(server){
+        delete server;
+        server = nullptr;
+    }
+
+    if(client){
+        delete client;
+        client = nullptr;
+    }
 
     ui->pushButton_12->show();
     ui->pushButton_13->show();
@@ -3122,7 +3604,9 @@ void MainWindow::on_pushButton_19_clicked()
     ui->pushButton_17->hide();
     ui->pushButton_18->hide();
     ui->pushButton_19->hide();
+    ui->label_20->hide();
     ui->pushButton_20->hide();
+    ui->pushButton_27->hide();
     ui->lineEdit->hide();
     ui->comboBox_2->hide();
     ui->comboBox_3->hide();
@@ -3130,11 +3614,30 @@ void MainWindow::on_pushButton_19_clicked()
     ui->comboBox_5->hide();
     ui->comboBox_6->hide();
     ui->comboBox_7->hide();
+    ui->pushButton_21->hide();
+    ui->pushButton_22->hide();
+    ui->pushButton_23->hide();
+    ui->label_17->hide();
+    ui->label_18->hide();
+    ui->label_19->hide();
+    ui->pushButton_24->hide();
+    ui->pushButton_25->hide();
+    ui->pushButton_26->hide();
+    ui->label_21->hide();
+    ui->label_22->hide();
+    ui->label_25->hide();
+    ui->label_26->hide();
+    ui->lineEdit_2->hide();
+    ui->lineEdit_3->hide();
+    ui->pushButton_28->hide();
 }
 
 void MainWindow::on_pushButton_15_clicked()
 {
     clickedSound();
+
+    ui->comboBox_2->blockSignals(true);
+    ui->comboBox_3->blockSignals(true);
 
     if(ui->pushButton_15->pos().x() == 310){
         QIcon ic4(":/img/PNG-cards-1.3/cross.png");
@@ -3142,6 +3645,7 @@ void MainWindow::on_pushButton_15_clicked()
         ui->pushButton_15->move(257, 30);
         ui->comboBox_2->setCurrentIndex(0);
         ui->comboBox_2->show();
+        ui->pushButton_24->show();
 
         if(difficulty == "Middle"){
             ui->comboBox_3->setCurrentIndex(0);
@@ -3159,17 +3663,34 @@ void MainWindow::on_pushButton_15_clicked()
         playersCount++;
     }
     else{
+        if(ui->comboBox_2->currentIndex() == 1){
+            server->setSlotsCounter(server->getSlotsCounter() - 1);
+            server->kickClient(ui->label_17);
+        }
         QIcon ic4(":/img/PNG-cards-1.3/plus.png");
         ui->pushButton_15->setIcon(ic4);
         ui->pushButton_15->move(310, 30);
         ui->comboBox_2->hide();
         ui->comboBox_3->hide();
+        ui->pushButton_21->hide();
+        ui->label_17->hide();
+        ui->pushButton_24->hide();
         playersCount--;
 
         if(playersCount == 1){
             ui->pushButton_18->setStyleSheet("font-family: 'Segoe UI'; font-size: 13pt; border: 1px solid; border-color: rgb(192,192,192); border-radius: 20px; color: white; font: bold;");
             ui->pushButton_18->setDisabled(true);
         }
+        else{
+            startCheck(0);
+        }
+    }
+
+    ui->comboBox_2->blockSignals(false);
+    ui->comboBox_3->blockSignals(false);
+
+    if(server){
+        server->HubChanged();
     }
 }
 
@@ -3177,12 +3698,16 @@ void MainWindow::on_pushButton_16_clicked()
 {
     clickedSound();
 
+    ui->comboBox_4->blockSignals(true);
+    ui->comboBox_5->blockSignals(true);
+
     if(ui->pushButton_16->pos().x() == 90){
         QIcon ic4(":/img/PNG-cards-1.3/cross.png");
         ui->pushButton_16->setIcon(ic4);
         ui->pushButton_16->move(37, 190);
         ui->comboBox_5->setCurrentIndex(0);
         ui->comboBox_5->show();
+        ui->pushButton_25->show();
 
         if(difficulty == "Middle"){
             ui->comboBox_4->setCurrentIndex(0);
@@ -3200,17 +3725,34 @@ void MainWindow::on_pushButton_16_clicked()
         playersCount++;
     }
     else{
+        if(ui->comboBox_5->currentIndex() == 1){
+            server->setSlotsCounter(server->getSlotsCounter() - 1);
+            server->kickClient(ui->label_18);
+        }
         QIcon ic4(":/img/PNG-cards-1.3/plus.png");
         ui->pushButton_16->setIcon(ic4);
         ui->pushButton_16->move(90, 190);
         ui->comboBox_5->hide();
         ui->comboBox_4->hide();
+        ui->pushButton_22->hide();
+        ui->label_18->hide();
+        ui->pushButton_25->hide();
         playersCount--;
 
         if(playersCount == 1){
             ui->pushButton_18->setStyleSheet("font-family: 'Segoe UI'; font-size: 13pt; border: 1px solid; border-color: rgb(192,192,192); border-radius: 20px; color: white; font: bold;");
             ui->pushButton_18->setDisabled(true);
         }
+        else{
+            startCheck(0);
+        }
+    }
+
+    ui->comboBox_4->blockSignals(false);
+    ui->comboBox_5->blockSignals(false);
+
+    if(server){
+        server->HubChanged();
     }
 }
 
@@ -3218,12 +3760,16 @@ void MainWindow::on_pushButton_17_clicked()
 {
     clickedSound();
 
+    ui->comboBox_6->blockSignals(true);
+    ui->comboBox_7->blockSignals(true);
+
     if(ui->pushButton_17->pos().x() == 530){
         QIcon ic4(":/img/PNG-cards-1.3/cross.png");
         ui->pushButton_17->setIcon(ic4);
         ui->pushButton_17->move(477, 190);
         ui->comboBox_7->setCurrentIndex(0);
         ui->comboBox_7->show();
+        ui->pushButton_26->show();
 
         if(difficulty == "Middle"){
             ui->comboBox_6->setCurrentIndex(0);
@@ -3241,17 +3787,34 @@ void MainWindow::on_pushButton_17_clicked()
         playersCount++;
     }
     else{
+        if(ui->comboBox_7->currentIndex() == 1){
+            server->setSlotsCounter(server->getSlotsCounter() - 1);
+            server->kickClient(ui->label_19);
+        }
         QIcon ic4(":/img/PNG-cards-1.3/plus.png");
         ui->pushButton_17->setIcon(ic4);
         ui->pushButton_17->move(530, 190);
         ui->comboBox_7->hide();
         ui->comboBox_6->hide();
+        ui->pushButton_23->hide();
+        ui->label_19->hide();
+        ui->pushButton_26->hide();
         playersCount--;
 
         if(playersCount == 1){
             ui->pushButton_18->setStyleSheet("font-family: 'Segoe UI'; font-size: 13pt; border: 1px solid; border-color: rgb(192,192,192); border-radius: 20px; color: white; font: bold;");
             ui->pushButton_18->setDisabled(true);
         }
+        else{
+            startCheck(0);
+        }
+    }
+
+    ui->comboBox_6->blockSignals(false);
+    ui->comboBox_7->blockSignals(false);
+
+    if(server){
+        server->HubChanged();
     }
 }
 
@@ -3574,9 +4137,20 @@ void MainWindow::on_pushButton_20_clicked()
 {
     clickedSound();
 
+    ui->label_17->setText("");
+    ui->label_18->setText("");
+    ui->label_19->setText("");
+
     QString curText = ui->pushButton_20->text();
 
     if(curText == "Load"){
+        ui->comboBox_2->blockSignals(true);
+        ui->comboBox_3->blockSignals(true);
+        ui->comboBox_4->blockSignals(true);
+        ui->comboBox_5->blockSignals(true);
+        ui->comboBox_6->blockSignals(true);
+        ui->comboBox_7->blockSignals(true);
+
         std::ifstream fin;
         fin.open(dirGame.toStdString());
         if(fin.is_open()){
@@ -3590,6 +4164,7 @@ void MainWindow::on_pushButton_20_clicked()
             QIcon ic4(":/img/PNG-cards-1.3/cross.png");
             ui->pushButton_15->setIcon(ic4);
             ui->pushButton_15->move(257, 30);
+            ui->pushButton_24->hide();
             ui->comboBox_2->setCurrentIndex(0);
             ui->comboBox_2->show();
             ui->comboBox_3->show();
@@ -3600,6 +4175,7 @@ void MainWindow::on_pushButton_20_clicked()
 
             ui->pushButton_16->setIcon(ic4);
             ui->pushButton_16->move(37, 190);
+            ui->pushButton_25->hide();
             ui->comboBox_5->setCurrentIndex(0);
             ui->comboBox_5->show();
             ui->comboBox_4->show();
@@ -3610,6 +4186,7 @@ void MainWindow::on_pushButton_20_clicked()
 
             ui->pushButton_17->setIcon(ic4);
             ui->pushButton_17->move(477, 190);
+            ui->pushButton_26->hide();
             ui->comboBox_7->setCurrentIndex(0);
             ui->comboBox_7->show();
             ui->comboBox_6->show();
@@ -3729,6 +4306,13 @@ void MainWindow::on_pushButton_20_clicked()
         ui->pushButton_18->setDisabled(false);
 
         curText = "Unload";
+
+        ui->comboBox_2->blockSignals(false);
+        ui->comboBox_3->blockSignals(false);
+        ui->comboBox_4->blockSignals(false);
+        ui->comboBox_5->blockSignals(false);
+        ui->comboBox_6->blockSignals(false);
+        ui->comboBox_7->blockSignals(false);
     }
     else{
         curText = "Load";
@@ -3737,11 +4321,11 @@ void MainWindow::on_pushButton_20_clicked()
 
         ui->lineEdit->setDisabled(false);
 
-        ui->comboBox_2->setDisabled(true);
+        ui->comboBox_2->setDisabled(false);
         ui->comboBox_3->setDisabled(false);
-        ui->comboBox_5->setDisabled(true);
+        ui->comboBox_5->setDisabled(false);
         ui->comboBox_4->setDisabled(false);
-        ui->comboBox_7->setDisabled(true);
+        ui->comboBox_7->setDisabled(false);
         ui->comboBox_6->setDisabled(false);
 
         ui->comboBox_2->hide();
@@ -3750,6 +4334,12 @@ void MainWindow::on_pushButton_20_clicked()
         ui->comboBox_4->hide();
         ui->comboBox_7->hide();
         ui->comboBox_6->hide();
+        ui->pushButton_21->hide();
+        ui->pushButton_22->hide();
+        ui->pushButton_23->hide();
+        ui->label_17->hide();
+        ui->label_18->hide();
+        ui->label_19->hide();
 
         QIcon ic3(":/img/PNG-cards-1.3/plus.png");
         ui->pushButton_15->setIcon(ic3);
@@ -3788,9 +4378,11 @@ void MainWindow::on_pushButton_20_clicked()
 
 void MainWindow::on_lineEdit_textEdited(const QString &arg1)
 {
+    if(server){
+        server->HubChanged();
+    }
     if(arg1 != "" && playersCount > 1){
-        ui->pushButton_18->setStyleSheet("font-family: 'Segoe UI'; font-size: 13pt; border: 2px solid; border-color: black; border-radius: 20px; background-color: white; color: black; font: bold;");
-        ui->pushButton_18->setDisabled(false);
+        startCheck(0);
     }
     else{
         ui->pushButton_18->setStyleSheet("font-family: 'Segoe UI'; font-size: 13pt; border: 1px solid; border-color: rgb(192,192,192); border-radius: 20px; color: white; font: bold;");
@@ -3818,5 +4410,434 @@ void MainWindow::on_pushButton_14_clicked()
     else{
         speedUp = true;
         ui->pushButton_14->setStyleSheet("font-family: 'Segoe UI'; font-size: 8pt; border: 1px solid; border-color: rgb(113,178,235); border-radius: 10px; background-color: rgb(147,195,237); color: black; font: bold;");
+    }
+}
+
+void MainWindow::on_comboBox_2_currentIndexChanged(int index)
+{
+    if(server){
+        int counter = server->getSlotsCounter();
+
+        startCheck(index);
+
+        if(index == 0){
+            server->setSlotsCounter(--counter);
+            server->kickClient(ui->label_17);
+            ui->comboBox_3->show();
+        }
+        else{
+            server->setSlotsCounter(++counter);
+            ui->comboBox_3->hide();
+        }
+
+        server->HubChanged();
+    }
+}
+
+void MainWindow::on_comboBox_5_currentIndexChanged(int index)
+{
+    if(server){
+        int counter = server->getSlotsCounter();
+
+        startCheck(index);
+
+        if(index == 0){
+            server->setSlotsCounter(--counter);
+            server->kickClient(ui->label_18);
+            ui->comboBox_4->show();
+        }
+        else{
+            server->setSlotsCounter(++counter);
+            ui->comboBox_4->hide();
+        }
+
+        server->HubChanged();
+    }
+}
+
+void MainWindow::on_comboBox_7_currentIndexChanged(int index)
+{
+    if(server){
+        int counter = server->getSlotsCounter();
+
+        startCheck(index);
+
+        if(index == 0){
+            server->setSlotsCounter(--counter);
+            server->kickClient(ui->label_19);
+            ui->comboBox_6->show();
+        }
+        else{
+            server->setSlotsCounter(++counter);
+            ui->comboBox_6->hide();
+        }
+
+        server->HubChanged();
+    }
+}
+
+void MainWindow::on_pushButton_21_clicked()
+{
+    clickedSound();
+
+    server->kickClient(ui->label_17);
+}
+
+void MainWindow::on_pushButton_22_clicked()
+{
+    clickedSound();
+
+    server->kickClient(ui->label_18);
+}
+
+void MainWindow::on_pushButton_23_clicked()
+{
+    clickedSound();
+
+    server->kickClient(ui->label_19);
+}
+
+void MainWindow::swapCombobox(QComboBox* firstUpper, QComboBox* secondUpper, QComboBox* firstLower, QComboBox* secondLower,
+                              QPushButton* firstBigButton, QPushButton* secondBigButton, QLabel* firstLabel, QLabel* secondLabel,
+                              QPushButton* firstKickButton,QPushButton* secondKickButton, QPushButton* firstSwapButton,
+                              QPushButton* secondSwapButton, int first_x1, int first_y1, int first_x2,
+                              int first_y2, int second_x1, int second_y1, int second_x2, int second_y2)
+{
+    if(!firstUpper->isHidden() && !secondUpper->isHidden()){
+        int tempIndex = firstUpper->currentIndex();
+        if(secondLower->isHidden()){
+            if(!firstLower->isHidden()){
+                firstLower->hide();
+                secondLower->show();
+                secondLower->setCurrentIndex(firstLower->currentIndex());
+            }
+        }
+        else{
+            int tempIdex2 = secondLower->currentIndex();
+            if(firstLower->isHidden()){
+                secondLower->hide();
+                firstLower->show();
+                firstLower->setCurrentIndex(tempIdex2);
+            }
+            else{
+                secondLower->setCurrentIndex(firstLower->currentIndex());
+                firstLower->setCurrentIndex(tempIdex2);
+            }
+        }
+
+        if(!firstKickButton->isHidden()){
+            if(secondKickButton->isHidden()){
+                firstKickButton->hide();
+                secondKickButton->show();
+                secondLabel->setText(firstLabel->text());
+                secondLabel->show();
+                firstLabel->setText("");
+                firstLabel->hide();
+            }
+            else{
+                QString name = firstLabel->text();
+                firstLabel->setText(secondLabel->text());
+                secondLabel->setText(name);
+            }
+            server->swapClients(firstLabel, secondLabel);
+        }
+        else if(!secondKickButton->isHidden()){
+            secondKickButton->hide();
+            firstKickButton->show();
+            firstLabel->setText(secondLabel->text());
+            firstLabel->show();
+            secondLabel->setText("");
+            secondLabel->hide();
+            server->swapClients(secondLabel, firstLabel);
+        }
+
+        firstUpper->setCurrentIndex(secondUpper->currentIndex());
+        secondUpper->setCurrentIndex(tempIndex);
+    }
+    else if(firstUpper->isHidden() && !secondUpper->isHidden()){
+        QIcon ic4(":/img/PNG-cards-1.3/plus.png");
+        secondBigButton->setIcon(ic4);
+        secondBigButton->move(second_x1, second_y1);
+        secondUpper->hide();
+        secondSwapButton->hide();
+
+        QIcon ic5(":/img/PNG-cards-1.3/cross.png");
+        firstBigButton->setIcon(ic5);
+        firstBigButton->move(first_x2, first_y2);
+        firstUpper->show();
+        firstSwapButton->show();
+
+        if(!secondLower->isHidden()){
+            firstLower->show();
+            firstLower->setCurrentIndex(secondLower->currentIndex());
+        }
+        secondLower->hide();
+
+        if(!secondKickButton->isHidden()){
+            secondKickButton->hide();
+            firstKickButton->show();
+            firstLabel->setText(secondLabel->text());
+            firstLabel->show();
+            secondLabel->setText("");
+            secondLabel->hide();
+            server->swapClients(secondLabel, firstLabel);
+        }
+
+        firstUpper->setCurrentIndex(secondUpper->currentIndex());
+    }
+    else if(!firstUpper->isHidden() && secondUpper->isHidden()){
+        QIcon ic4(":/img/PNG-cards-1.3/plus.png");
+        firstBigButton->setIcon(ic4);
+        firstBigButton->move(first_x1, first_y1);
+        firstUpper->hide();
+        firstSwapButton->hide();
+
+        QIcon ic5(":/img/PNG-cards-1.3/cross.png");
+        secondBigButton->setIcon(ic5);
+        secondBigButton->move(second_x2, second_y2);
+        secondUpper->show();
+        secondSwapButton->show();
+
+        if(!firstLower->isHidden()){
+            secondLower->show();
+            secondLower->setCurrentIndex(firstLower->currentIndex());
+        }
+        firstLower->hide();
+
+        if(!firstKickButton->isHidden()){
+            firstKickButton->hide();
+            secondKickButton->show();
+            secondLabel->setText(firstLabel->text());
+            secondLabel->show();
+            firstLabel->setText("");
+            firstLabel->hide();
+            server->swapClients(firstLabel, secondLabel);
+        }
+
+        secondUpper->setCurrentIndex(firstUpper->currentIndex());
+    }
+}
+
+void MainWindow::on_pushButton_24_clicked()
+{
+    clickedSound();
+
+    if(server){
+        ui->comboBox_4->blockSignals(true);
+        ui->comboBox_5->blockSignals(true);
+        ui->comboBox_6->blockSignals(true);
+        ui->comboBox_7->blockSignals(true);
+
+        swapCombobox(ui->comboBox_5, ui->comboBox_7, ui->comboBox_4, ui->comboBox_6, ui->pushButton_16, ui->pushButton_17, ui->label_18,
+                     ui->label_19, ui->pushButton_22, ui->pushButton_23, ui->pushButton_25, ui->pushButton_26, 90, 190, 37, 190, 530, 190, 477, 190);
+
+        ui->comboBox_4->blockSignals(false);
+        ui->comboBox_5->blockSignals(false);
+        ui->comboBox_6->blockSignals(false);
+        ui->comboBox_7->blockSignals(false);
+
+        server->HubChanged();
+    }
+    else if(client){
+        client->swapPressed("1");
+    }
+}
+
+void MainWindow::on_pushButton_25_clicked()
+{
+    clickedSound();
+
+    if(server){
+        ui->comboBox_2->blockSignals(true);
+        ui->comboBox_3->blockSignals(true);
+        ui->comboBox_4->blockSignals(true);
+        ui->comboBox_5->blockSignals(true);
+        ui->comboBox_6->blockSignals(true);
+        ui->comboBox_7->blockSignals(true);
+
+        swapCombobox(ui->comboBox_5, ui->comboBox_7, ui->comboBox_4, ui->comboBox_6, ui->pushButton_16, ui->pushButton_17, ui->label_18,
+                     ui->label_19, ui->pushButton_22, ui->pushButton_23, ui->pushButton_25, ui->pushButton_26, 90, 190, 37, 190, 530, 190, 477, 190);
+        swapCombobox(ui->comboBox_5, ui->comboBox_2, ui->comboBox_4, ui->comboBox_3, ui->pushButton_16, ui->pushButton_15, ui->label_18,
+                     ui->label_17, ui->pushButton_22, ui->pushButton_21, ui->pushButton_25, ui->pushButton_24, 90, 190, 37, 190, 310, 30, 257, 30);
+
+        ui->comboBox_2->blockSignals(false);
+        ui->comboBox_3->blockSignals(false);
+        ui->comboBox_4->blockSignals(false);
+        ui->comboBox_5->blockSignals(false);
+        ui->comboBox_6->blockSignals(false);
+        ui->comboBox_7->blockSignals(false);
+
+        server->HubChanged();
+    }
+    else if(client){
+        client->swapPressed("2");
+    }
+}
+
+void MainWindow::on_pushButton_26_clicked()
+{
+    clickedSound();
+
+    if(server){
+        ui->comboBox_2->blockSignals(true);
+        ui->comboBox_3->blockSignals(true);
+        ui->comboBox_4->blockSignals(true);
+        ui->comboBox_5->blockSignals(true);
+        ui->comboBox_6->blockSignals(true);
+        ui->comboBox_7->blockSignals(true);
+
+        swapCombobox(ui->comboBox_5, ui->comboBox_7, ui->comboBox_4, ui->comboBox_6, ui->pushButton_16, ui->pushButton_17, ui->label_18,
+                     ui->label_19, ui->pushButton_22, ui->pushButton_23, ui->pushButton_25, ui->pushButton_26, 90, 190, 37, 190, 530, 190, 477, 190);
+        swapCombobox(ui->comboBox_7, ui->comboBox_2, ui->comboBox_6, ui->comboBox_3, ui->pushButton_17, ui->pushButton_15, ui->label_19,
+                     ui->label_17, ui->pushButton_23, ui->pushButton_21, ui->pushButton_26, ui->pushButton_24, 530, 190, 477, 190, 310, 30, 257, 30);
+
+        ui->comboBox_2->blockSignals(false);
+        ui->comboBox_3->blockSignals(false);
+        ui->comboBox_4->blockSignals(false);
+        ui->comboBox_5->blockSignals(false);
+        ui->comboBox_6->blockSignals(false);
+        ui->comboBox_7->blockSignals(false);
+
+        server->HubChanged();
+    }
+    else if(client){
+        client->swapPressed("3");
+    }
+}
+
+void MainWindow::on_pushButton_27_clicked()
+{
+    clickedSound();
+
+    QString text = ui->label_20->text();
+    QString afterSpace = text.section(' ', 1);
+
+    QClipboard *clipboard = QApplication::clipboard();
+    clipboard->setText(afterSpace);
+}
+
+void MainWindow::on_pushButton_13_clicked()
+{
+    clickedSound();
+
+    ui->pushButton_11->show();
+    ui->pushButton_11->move(630, 20);
+    ui->label_21->show();
+    ui->label_22->show();
+    ui->lineEdit_2->show();
+    ui->lineEdit_3->show();
+    ui->pushButton_28->show();
+    ui->pushButton_19->show();
+
+    ui->pushButton_12->hide();
+    ui->pushButton_13->hide();
+    ui->pushButton_7->hide();
+    ui->pushButton_8->hide();
+    ui->label_9->hide();
+    ui->label_10->hide();
+    ui->label_16->hide();
+    ui->line->hide();
+    ui->line_2->hide();
+
+    ui->pushButton_28->setDisabled(true);
+    ui->pushButton_28->setStyleSheet("font-family: 'Segoe UI'; font-size: 10pt; border: 1px solid; border-color: rgb(192,192,192); border-radius: 20px; color: white; font: bold;");
+
+    std::ifstream fin;
+    fin.open(dirName.toStdString());
+    if(fin.is_open()){
+        std::string name;
+        std::getline(fin, name);
+        ui->lineEdit_3->setText(QString::fromStdString(name));
+    }
+    fin.close();
+
+    QHostAddress addr;
+    if(addr.setAddress(ui->lineEdit_2->text()) && ui->lineEdit_3->text() != ""){
+        ui->pushButton_28->setStyleSheet("font-family: 'Segoe UI'; font-size: 10pt; border: 2px solid; border-color: black; border-radius: 20px; background-color: white; color: black; font: bold;");
+        ui->pushButton_28->setDisabled(false);
+    }
+}
+
+void MainWindow::on_lineEdit_2_textEdited(const QString &arg1)
+{
+    QHostAddress addr;
+    if(addr.setAddress(arg1) && ui->lineEdit_3->text() != ""){
+        ui->pushButton_28->setStyleSheet("font-family: 'Segoe UI'; font-size: 10pt; border: 2px solid; border-color: black; border-radius: 20px; background-color: white; color: black; font: bold;");
+        ui->pushButton_28->setDisabled(false);
+    }
+    else{
+        ui->pushButton_28->setStyleSheet("font-family: 'Segoe UI'; font-size: 10pt; border: 1px solid; border-color: rgb(192,192,192); border-radius: 20px; color: white; font: bold;");
+        ui->pushButton_28->setDisabled(true);
+    }
+}
+
+void MainWindow::on_lineEdit_3_textEdited(const QString &arg1)
+{
+    QHostAddress addr;
+    if(addr.setAddress(ui->lineEdit_2->text()) && arg1 != ""){
+        ui->pushButton_28->setStyleSheet("font-family: 'Segoe UI'; font-size: 10pt; border: 2px solid; border-color: black; border-radius: 20px; background-color: white; color: black; font: bold;");
+        ui->pushButton_28->setDisabled(false);
+    }
+    else{
+        ui->pushButton_28->setStyleSheet("font-family: 'Segoe UI'; font-size: 10pt; border: 1px solid; border-color: rgb(192,192,192); border-radius: 20px; color: white; font: bold;");
+        ui->pushButton_28->setDisabled(true);
+    }
+}
+
+void MainWindow::on_pushButton_28_clicked()
+{
+    clickedSound();
+
+    client = new GameClient();
+
+    ui->pushButton_11->hide();
+    ui->label_21->hide();
+    ui->label_22->hide();
+    ui->lineEdit_2->hide();
+    ui->lineEdit_3->hide();
+    ui->pushButton_28->hide();
+    ui->pushButton_19->hide();
+
+    movie = new QMovie(":/img/PNG-cards-1.3/loading.gif");
+    ui->label_23->setMovie(movie);
+    ui->label_23->setScaledContents(true);
+    movie->start();
+    ui->label_23->show();
+    ui->label_24->show();
+
+    QString str = ui->lineEdit_3->text();
+
+    std::ofstream fout;
+    fout.open(dirName.toStdString());
+
+    if(fout.is_open()){
+        fout << str.toStdString();
+    }
+    fout.close();
+
+    client->setMain(this);
+    client->setName(str);
+
+    client->connectToServer(ui->lineEdit_2->text(), 55555);
+}
+
+void MainWindow::on_comboBox_3_currentIndexChanged(int index)
+{
+    if(server){
+        server->HubChanged();
+    }
+}
+
+void MainWindow::on_comboBox_4_currentIndexChanged(int index)
+{
+    if(server){
+        server->HubChanged();
+    }
+}
+
+void MainWindow::on_comboBox_6_currentIndexChanged(int index)
+{
+    if(server){
+        server->HubChanged();
     }
 }

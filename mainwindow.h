@@ -2,6 +2,8 @@
 #define MAINWINDOW_H
 
 #include "optionwindow.h"
+#include "qcombobox.h"
+#include "qlabel.h"
 #include <QtWidgets/QMainWindow>
 #include <QPushButton>
 #include <QSignalMapper>
@@ -13,6 +15,8 @@
 #include <QWheelEvent>
 
 class Player;
+class GameServer;
+class GameClient;
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -48,7 +52,7 @@ public:
 
     void gameEnd();
 
-    void cleaner();
+    void cleaner(bool sh = true);
 
     bool possibleMove(std::string p, std::string t, bool ndmove);
 
@@ -135,11 +139,25 @@ public:
 
     void endClicked(bool end = false);
 
-    int nextOne(int mv);
+    int nextOne(int);
 
     int getPlayersCount() const { return playersCount; }
 
     void pushButtonBridge();
+
+    QLabel* getLabel();
+
+    void ClientDisconnected(QLabel*);
+
+    void connectionError(const QString&);
+
+    void fromHostMessage(const QString&);
+
+    QJsonObject hubJson(QLabel*);
+
+    void parseHub(const QJsonObject&);
+
+    void parseSwap(QLabel*, QString&);
 
 private slots:
 
@@ -195,6 +213,40 @@ private slots:
 
     void on_pushButton_14_clicked();
 
+    void on_comboBox_2_currentIndexChanged(int index);
+
+    void on_comboBox_5_currentIndexChanged(int index);
+
+    void on_comboBox_7_currentIndexChanged(int index);
+
+    void on_pushButton_21_clicked();
+
+    void on_pushButton_22_clicked();
+
+    void on_pushButton_23_clicked();
+
+    void on_pushButton_24_clicked();
+
+    void on_pushButton_25_clicked();
+
+    void on_pushButton_26_clicked();
+
+    void on_pushButton_27_clicked();
+
+    void on_pushButton_13_clicked();
+
+    void on_lineEdit_2_textEdited(const QString &arg1);
+
+    void on_lineEdit_3_textEdited(const QString &arg1);
+
+    void on_pushButton_28_clicked();
+
+    void on_comboBox_3_currentIndexChanged(int index);
+
+    void on_comboBox_4_currentIndexChanged(int index);
+
+    void on_comboBox_6_currentIndexChanged(int index);
+
 protected:
     bool eventFilter(QObject *obj, QEvent *event) override;
 
@@ -226,7 +278,10 @@ private:
     bool secMove;
     std::string Jackchoose;
     int PointsX;
-    QTimer* timer;
+    QTimer* timer = nullptr;
+    GameServer* server = nullptr;
+    GameClient* client = nullptr;
+    QMovie* movie = nullptr;
     int Set;
     optionwindow *window;
     bool QSMode;
@@ -332,6 +387,16 @@ private:
         soundplayer->setVolume(soundvol / 100.0);
         soundplayer->play();
     }
+
+    void swapCombobox(QComboBox* firstUpper, QComboBox* secondUpper, QComboBox* firstLower, QComboBox* secondLower, QPushButton* firstBigButton,
+                      QPushButton* secondBigButton, QLabel* firstLabel, QLabel* secondLabel, QPushButton* firstKickButton,
+                      QPushButton* secondKickButton, QPushButton* firstSwapButton, QPushButton* secondSwapButton,
+                      int first_x1, int first_y1, int first_x2, int first_y2, int second_x1, int second_y1, int second_x2, int second_y2);
+
+    void startCheck(int index);
+
+    void hubParseHelper(QPushButton *bigButton, QPoint firstCords, QPoint secondCords, int jsonBig, QPushButton *swap, QComboBox *upper,
+                        QComboBox *lower, QLabel *label, int jsonUpper, int jsonLower, const QString &jsonLabel);
 
 signals:
     void QSMsignal2(bool, bool, std::string, int, int, bool);

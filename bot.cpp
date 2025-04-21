@@ -288,59 +288,68 @@ void Bot::botMove() {
         }
     }
     else if(mainWindow->isSecMove() == 1 && cardsSize > 0){
-        for(int i = 0; i < cardsSize; i++){
-            if(cards[i][0] == table[tableSize - 1][0]){
-                finalmove[0] = i;
-                finalmoveSize = 1;
-                mainWindow->setJackchoose("");
-                mainWindow->hideLable3();
-                if(cards[i][0] == 'J'){
-                    int sign[4];
-                    sign[0] = 0;
-                    sign[1] = 0;
-                    sign[2] = 0;
-                    sign[3] = 0;
-                    for(int i = 0; i < cardsSize; i++){
-                        if(cards[i][1] == 'c'){
-                            sign[0]++;
+        if(mainWindow->isBridge()){
+            mainWindow->botNoChoice();
+            checkForTake = 0;
+        }
+        else{
+            for(int i = 0; i < cardsSize; i++){
+                if(cards[i][0] == table[tableSize - 1][0]){
+                    finalmove[0] = i;
+                    finalmoveSize = 1;
+                    mainWindow->setJackchoose("");
+                    mainWindow->hideLable3();
+                    if(cards[i][0] == 'J'){
+                        int sign[4];
+                        sign[0] = 0;
+                        sign[1] = 0;
+                        sign[2] = 0;
+                        sign[3] = 0;
+                        for(int i = 0; i < cardsSize; i++){
+                            if(cards[i][1] == 'c'){
+                                sign[0]++;
+                            }
+                            else if(cards[i][1] == 'k'){
+                                sign[1]++;
+                            }
+                            else if(cards[i][1] == 'b'){
+                                sign[2]++;
+                            }
+                            else if(cards[i][1] == 'p'){
+                                sign[3]++;
+                            }
                         }
-                        else if(cards[i][1] == 'k'){
-                            sign[1]++;
+                        int k = 0;
+                        for(int i = 0; i < 4; i++){
+                            if(sign[k] < sign[i]){
+                                k = i;
+                            }
                         }
-                        else if(cards[i][1] == 'b'){
-                            sign[2]++;
+                        if(k == 0){
+                            mainWindow->setJackchoose("c");
+                            mainWindow->lable3Style("border-image: url(:/img/PNG-cards-1.3/chirva.png);");
                         }
-                        else if(cards[i][1] == 'p'){
-                            sign[3]++;
+                        else if(k == 1){
+                            mainWindow->setJackchoose("k");
+                            mainWindow->lable3Style("border-image: url(:/img/PNG-cards-1.3/kresti.png);");
                         }
-                    }
-                    int k = 0;
-                    for(int i = 0; i < 4; i++){
-                        if(sign[k] < sign[i]){
-                            k = i;
+                        else if(k == 2){
+                            mainWindow->setJackchoose("b");
+                            mainWindow->lable3Style("border-image: url(:/img/PNG-cards-1.3/bybna.png);");
                         }
-                    }
-                    if(k == 0){
-                        mainWindow->setJackchoose("c");
-                        mainWindow->lable3Style("border-image: url(:/img/PNG-cards-1.3/chirva.png);");
-                    }
-                    else if(k == 1){
-                        mainWindow->setJackchoose("k");
-                        mainWindow->lable3Style("border-image: url(:/img/PNG-cards-1.3/kresti.png);");
-                    }
-                    else if(k == 2){
-                        mainWindow->setJackchoose("b");
-                        mainWindow->lable3Style("border-image: url(:/img/PNG-cards-1.3/bybna.png);");
-                    }
-                    else if(k == 3){
-                        mainWindow->setJackchoose("p");
-                        mainWindow->lable3Style("border-image: url(:/img/PNG-cards-1.3/piki.png);");
+                        else if(k == 3){
+                            mainWindow->setJackchoose("p");
+                            mainWindow->lable3Style("border-image: url(:/img/PNG-cards-1.3/piki.png);");
+                        }
                     }
                 }
-
             }
         }
     }
+
+    if(mainWindow->isBridge())
+        mainWindow->setBridge(false);
+
     if(finalmoveSize > 0 && finalmove[0] < cardsSize){
         mainWindow->cardSound();
         if(cards[finalmove[finalmoveSize - 1]][0] == 'J'){
