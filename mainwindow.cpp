@@ -246,29 +246,105 @@ QLabel* MainWindow::getLabel()
     }
 }
 
-void MainWindow::ClientDisconnected(QLabel *label)
+void MainWindow::ClientDisconnected(QLabel *label, int index)
 {
-    if(ui->label_17 == label){
-        ui->label_17->hide();
-        ui->label_17->setText("");
-        ui->pushButton_21->hide();
+    if(isInGame){
+        QMessageBox* YesNomsgBox = new QMessageBox(this);
+        YesNomsgBox->setWindowTitle("Player disconnected");
+        YesNomsgBox->setText("Player " + QString::fromStdString(players[index]->getName()) + " has disconnected.\nDo you want a bot to replace them?");
+        YesNomsgBox->setStandardButtons(QMessageBox::Yes | QMessageBox::No);
+        YesNomsgBox->setDefaultButton(QMessageBox::Yes);
+        YesNomsgBox->button(QMessageBox::Yes)->setText("Yes, replace");
+        YesNomsgBox->button(QMessageBox::No)->setText("No, quit");
+        YesNomsgBox->setStyleSheet(massBoxStyle);
+
+        foreach (QPushButton *button, YesNomsgBox->findChildren<QPushButton*>()) {
+            button->setCursor(Qt::PointingHandCursor);
+        }
+
+        YesNomsgBox->setModal(true);
+
+        connect(YesNomsgBox, &QMessageBox::finished, this, [=](int result){
+            clickedSound();
+            if(result == QMessageBox::No){
+                leaveGame();
+            }
+            else{
+                Human* human = dynamic_cast<Human*>(players[index]);
+                if (human) {
+                    Bot* bot = new Bot(*human);
+                    delete players[index];
+                    bot->setDifficulty(difficulty);
+                    players[index] = bot;
+                    for(int i = 0; i < players[index]->getCardsSize(); i++){
+                       onAddWidgetBot(players[index], i);
+                    }
+
+                    if (players[index]->getDifficulty() == "Middle"){
+                        if(players.size() == 2){
+                            replaceHumanFor2();
+                        }
+                        else{
+                            players[index]->getLabel()->setText("<html><span style='color: orange; font-size: 11pt; font-weight: 900; font-family: 'Segoe UI Black';'>M</span> "
+                                                       + QString::fromStdString(players[index]->getName() + " | Points: " + std::to_string(players[index]->getPoints()) + "</html>"));
+                        }
+                    }
+                    else if (players[index]->getDifficulty() == "Hard"){
+                        if(players.size() == 2){
+                            replaceHumanFor2();
+                        }
+                        else{
+                            players[index]->getLabel()->setText("<html><span style='color: red; font-size: 11pt; font-weight: 900; font-family: 'Segoe UI Black';'>H</span> "
+                                                       + QString::fromStdString(players[index]->getName() + " | Points: " + std::to_string(players[index]->getPoints()) + "</html>"));
+                        }
+                    }
+
+                    if(isFullscreen){
+                        QString curText = players[index]->getLabel()->text();
+                        int newFontSize = 11 * scaleFactor;
+                        QRegularExpression regex("font-size:\\s*\\d+pt");
+                        curText.replace(regex, QString("font-size: %1pt").arg(newFontSize));
+                        players[index]->getLabel()->setText(curText);
+                    }
+
+                    server->GameChanged();
+                }
+            }
+            YesNomsgBox->deleteLater();
+        });
+
+        YesNomsgBox->open();
     }
-    else if(ui->label_18 == label){
-        ui->label_18->hide();
-        ui->label_18->setText("");
-        ui->pushButton_22->hide();
+    else if(ui->lineEdit->isVisible()){
+        if(ui->label_17 == label){
+            ui->label_17->hide();
+            ui->label_17->setText("");
+            ui->pushButton_21->hide();
+        }
+        else if(ui->label_18 == label){
+            ui->label_18->hide();
+            ui->label_18->setText("");
+            ui->pushButton_22->hide();
+        }
+        else if(ui->label_19 == label){
+            ui->label_19->hide();
+            ui->label_19->setText("");
+            ui->pushButton_23->hide();
+        }
+        startCheck(0);
+        server->HubChanged();
     }
-    else if(ui->label_19 == label){
-        ui->label_19->hide();
-        ui->label_19->setText("");
-        ui->pushButton_23->hide();
-    }
-    startCheck(0);
 }
 
 void MainWindow::connectionError(const QString &error)
 {
+    bool temp = isInGame;
+    isInGame = false;
     cleaner(isShuffl);
+    for (Player* playe : players) {
+        delete playe;
+    }
+    players.clear();
     ui->lineEdit->hide();
 
     ui->comboBox_2->hide();
@@ -293,7 +369,6 @@ void MainWindow::connectionError(const QString &error)
     ui->label_24->hide();
 
     ui->pushButton_11->show();
-    ui->pushButton_11->move(630, 20);
     ui->label_21->show();
     ui->label_22->show();
     ui->lineEdit_2->show();
@@ -307,32 +382,157 @@ void MainWindow::connectionError(const QString &error)
         movie = nullptr;
     }
 
-    QMessageBox msgBox(this);
-    msgBox.setStandardButtons(QMessageBox::Ok);
-    msgBox.setDefaultButton(QMessageBox::Ok);
-    foreach (QPushButton *button, msgBox.findChildren<QPushButton*>()) {
+    QMessageBox* msgBox = new QMessageBox(this);
+    msgBox->setStandardButtons(QMessageBox::Ok);
+    msgBox->setDefaultButton(QMessageBox::Ok);
+
+    foreach (QPushButton *button, msgBox->findChildren<QPushButton*>()) {
         button->setCursor(Qt::PointingHandCursor);
     }
-    msgBox.setWindowTitle("Error");
-    msgBox.setStyleSheet(massBoxStyle);
-    msgBox.setText(error);
-    msgBox.exec();
-    clickedSound();
+
+    msgBox->setWindowTitle("Error");
+    msgBox->setStyleSheet(massBoxStyle);
+    msgBox->setText(error);
+    msgBox->setModal(true);
+
+    connect(msgBox, &QMessageBox::finished, this, [=](int result){
+        if (result == QMessageBox::Ok) {
+            clickedSound();
+        }
+        msgBox->deleteLater();
+    });
+
+    msgBox->open();
+
+    player->stop();
+    player->setSource(QUrl::fromLocalFile(tempFilePathMenu));
+    audioOutput->setVolume((musicvol / 100.0) * 0.1);
+    player->setLoops(-1);
+    player->play();
+
+    if(temp)
+        Resizing();
+    ui->pushButton_11->move(630, 20);
 }
 
-void MainWindow::fromHostMessage(const QString &message)
+void MainWindow::fromHostMessage(const QString &message, const QString &title)
 {
-    QMessageBox msgBox(this);
-    msgBox.setStandardButtons(QMessageBox::Ok);
-    msgBox.setDefaultButton(QMessageBox::Ok);
-    foreach (QPushButton *button, msgBox.findChildren<QPushButton*>()) {
+    QMessageBox* msgBox = new QMessageBox(this);
+    msgBox->setStandardButtons(QMessageBox::Ok);
+    msgBox->setDefaultButton(QMessageBox::Ok);
+
+    foreach (QPushButton *button, msgBox->findChildren<QPushButton*>()) {
         button->setCursor(Qt::PointingHandCursor);
     }
-    msgBox.setWindowTitle("Message");
-    msgBox.setStyleSheet(massBoxStyle);
-    msgBox.setText(message);
-    msgBox.exec();
-    clickedSound();
+
+    msgBox->setWindowTitle(title);
+    msgBox->setStyleSheet(massBoxStyle);
+    msgBox->setText(message);
+    msgBox->setModal(true);
+
+    connect(msgBox, &QMessageBox::finished, this, [=](int result){
+        if (result == QMessageBox::Ok) {
+            clickedSound();
+        }
+        if(msgBox->windowTitle() == "Game over"){
+            if(client->isConnected()){
+                cleaner();
+
+                for (Player* playe : players) {
+                    delete playe;
+                }
+                players.clear();
+
+                ui->pushButton_12->show();
+                ui->pushButton_13->show();
+                ui->pushButton_7->show();
+                ui->pushButton_8->show();
+                ui->pushButton_14->hide();
+                ui->label_11->hide();
+                ui->label_12->hide();
+                ui->label_13->hide();
+                ui->scrollArea->hide();
+                ui->label_9->show();
+                ui->label_10->show();
+                ui->label_16->show();
+                ui->line->show();
+                ui->line_2->show();
+
+                player->stop();
+                player->setSource(QUrl::fromLocalFile(tempFilePathMenu));
+                audioOutput->setVolume((musicvol / 100.0) * 0.1);
+                player->setLoops(-1);
+                player->play();
+
+                Resizing();
+            }
+            else{
+                ui->pushButton_11->hide();
+                ui->pushButton_11->move(630, 60);
+                ui->pushButton_19->hide();
+                ui->label_21->hide();
+                ui->label_22->hide();
+                ui->lineEdit_2->hide();
+                ui->lineEdit_3->hide();
+                ui->pushButton_28->hide();
+
+                ui->pushButton_12->show();
+                ui->pushButton_13->show();
+                ui->pushButton_7->show();
+                ui->pushButton_8->show();
+                ui->label_9->show();
+                ui->label_10->show();
+                ui->label_16->show();
+                ui->line->show();
+                ui->line_2->show();
+            }
+            if(client){
+                delete client;
+                client = nullptr;
+            }
+        }
+        else if(msgBox->text() == "No free slots." || msgBox->text() == "You were kicked out."){
+            ui->lineEdit->hide();
+
+            ui->comboBox_2->hide();
+            ui->comboBox_3->hide();
+            ui->comboBox_5->hide();
+            ui->comboBox_4->hide();
+            ui->comboBox_7->hide();
+            ui->comboBox_6->hide();
+            ui->label_25->hide();
+            ui->label_26->hide();
+            ui->label_17->setText("");
+            ui->label_18->setText("");
+            ui->label_19->setText("");
+
+            ui->pushButton_15->hide();
+            ui->pushButton_16->hide();
+            ui->pushButton_17->hide();
+            ui->pushButton_24->hide();
+            ui->pushButton_25->hide();
+            ui->pushButton_26->hide();
+            ui->label_23->hide();
+            ui->label_24->hide();
+
+            ui->pushButton_11->show();
+            ui->label_21->show();
+            ui->label_22->show();
+            ui->lineEdit_2->show();
+            ui->lineEdit_3->show();
+            ui->pushButton_28->show();
+            ui->pushButton_19->show();
+
+            if(movie){
+                movie->stop();
+                delete movie;
+                movie = nullptr;
+            }
+        }
+        msgBox->deleteLater();
+    });
+
+    msgBox->open();
 }
 
 QJsonObject MainWindow::hubJson(QLabel *label)
@@ -365,7 +565,73 @@ QJsonObject MainWindow::hubJson(QLabel *label)
     json["host"] = ui->lineEdit->text();
     json["points"] = PointsMode;
     json["QSM"] = QSMode;
+    if(ui->pushButton_20->text() == "Unload"){
+        json["isSave"] = true;
+    }
+    else{
+        json["isSave"] = false;
+    }
+
     return json;
+}
+
+QJsonObject MainWindow::gameJson(int id)
+{
+    QJsonObject json;
+    QJsonArray jsonArray;
+    for (int i = 0; i < tableCardsSize; i++) {
+        jsonArray.append(QString::fromStdString(tableCards[i]));
+    }
+    json["tableCards"] = jsonArray;
+    json["jackchoose"] = QString::fromStdString(Jackchoose);
+    json["set"] = Set;
+    json["isShuffl"] = isShuffl;
+    json["pointsX"] = PointsX;
+    json["bridge"] = Bridge;
+    json["secMove"] = secMove;
+    json["move"] = Mmove;
+    json["tableSize"] = tableCardsSize;
+    json["colodSize"] = ColodCardsSize;
+    json["playerCount"] = static_cast<int>(players.size());
+    json["p0size"] = players[0]->getCardsSize();
+    json["p0name"] = QString::fromStdString(players[0]->getName());
+    json["p0points"] = players[0]->getPoints();
+    json["id"] = id;
+    if(id != 1){
+        json["p1size"] = players[1]->getCardsSize();
+        json["p1name"] = QString::fromStdString(players[1]->getName());
+        json["p1points"] = players[1]->getPoints();
+        json["p1difficulty"] = QString::fromStdString(players[1]->getDifficulty());
+    }
+    if(id != 2 && players.size() > 2){
+        json["p2size"] = players[2]->getCardsSize();
+        json["p2name"] = QString::fromStdString(players[2]->getName());
+        json["p2points"] = players[2]->getPoints();
+        json["p2difficulty"] = QString::fromStdString(players[2]->getDifficulty());
+    }
+    if(id != 3 && players.size() > 3){
+        json["p3size"] = players[3]->getCardsSize();
+        json["p3name"] = QString::fromStdString(players[3]->getName());
+        json["p3points"] = players[3]->getPoints();
+        json["p3difficulty"] = QString::fromStdString(players[3]->getDifficulty());
+    }
+    gameJsonHelper(json, id);
+
+    return json;
+}
+
+void MainWindow::gameJsonHelper(QJsonObject &json, int index)
+{
+    QJsonArray jsonArray;
+    std::string (&Cards)[36] = players[index]->getCards();
+    int size = players[index]->getCardsSize();
+    for (int i = 0; i < size; i++) {
+        jsonArray.append(QString::fromStdString(Cards[i]));
+    }
+    json["cards"] = jsonArray;
+    json["size"] = players[index]->getCardsSize();
+    json["check"] = players[index]->getCheckForTake();
+    json["points"] = players[index]->getPoints();
 }
 
 void MainWindow::parseHub(const QJsonObject &json)
@@ -409,6 +675,9 @@ void MainWindow::parseHub(const QJsonObject &json)
     ui->label_18->setText("");
     ui->label_19->setText("");
 
+    ui->pushButton_15->setStyleSheet("font-family: 'Segoe UI'; font-size: 13pt; border: 1px solid; border-color: rgb(192,192,192); border-radius: 10px; color: white; font: bold;");
+    ui->pushButton_16->setStyleSheet("font-family: 'Segoe UI'; font-size: 13pt; border: 1px solid; border-color: rgb(192,192,192); border-radius: 10px; color: white; font: bold;");
+    ui->pushButton_17->setStyleSheet("font-family: 'Segoe UI'; font-size: 13pt; border: 1px solid; border-color: rgb(192,192,192); border-radius: 10px; color: white; font: bold;");
     ui->pushButton_15->setDisabled(true);
     ui->pushButton_16->setDisabled(true);
     ui->pushButton_17->setDisabled(true);
@@ -440,7 +709,8 @@ void MainWindow::parseHub(const QJsonObject &json)
         ui->comboBox_2->show();
         ui->label_17->setText(json["host"].toString());
         ui->label_17->show();
-        ui->pushButton_24->show();
+        if(!json["isSave"].toBool())
+            ui->pushButton_24->show();
 
         hubParseHelper(ui->pushButton_17, QPoint(530, 190), QPoint(477, 190), json["big2"].toInt(), ui->pushButton_26, ui->comboBox_7,
                        ui->comboBox_6, ui->label_19, json["uper2"].toInt(), json["lower2"].toInt(), json["label2"].toString());
@@ -457,7 +727,8 @@ void MainWindow::parseHub(const QJsonObject &json)
         ui->comboBox_7->show();
         ui->label_19->setText(json["host"].toString());
         ui->label_19->show();
-        ui->pushButton_26->show();
+        if(!json["isSave"].toBool())
+            ui->pushButton_26->show();
 
         hubParseHelper(ui->pushButton_16, QPoint(90, 190), QPoint(37, 190), json["big1"].toInt(), ui->pushButton_25, ui->comboBox_5,
                        ui->comboBox_4, ui->label_18, json["uper1"].toInt(), json["lower1"].toInt(), json["label1"].toString());
@@ -474,7 +745,8 @@ void MainWindow::parseHub(const QJsonObject &json)
         ui->comboBox_5->show();
         ui->label_18->setText(json["host"].toString());
         ui->label_18->show();
-        ui->pushButton_25->show();
+        if(!json["isSave"].toBool())
+            ui->pushButton_25->show();
 
         hubParseHelper(ui->pushButton_15, QPoint(310, 30), QPoint(257, 30), json["big2"].toInt(), ui->pushButton_24, ui->comboBox_2,
                        ui->comboBox_3, ui->label_17, json["uper2"].toInt(), json["lower2"].toInt(), json["label2"].toString());
@@ -561,6 +833,463 @@ void MainWindow::parseSwap(QLabel *label, QString &button)
     ui->comboBox_7->blockSignals(false);
 
     server->HubChanged();
+
+    startCheck(0);
+}
+
+void MainWindow::parseGame(const QJsonObject &json)
+{
+    QJsonArray tableArray = json["tableCards"].toArray();
+    QJsonArray playerArray = json["cards"].toArray();
+    int id = json["id"].toInt();
+
+    if(!ui->lineEdit->isHidden()){
+        cardSound();
+        ui->scrollArea->show();
+        ui->label_13->show();
+        playerCreator(json["playerCount"].toInt(), id, json["p0name"].toString(),
+                      json["p1name"].toString(), json["p2name"].toString(), json["p3name"].toString());
+
+        ui->label_25->hide();
+        ui->label_26->hide();
+        scaleForMany();
+
+        tableCardsSize = json["tableSize"].toInt();
+        ColodCardsSize = json["colodSize"].toInt();
+        for (int i = 0; i < tableCardsSize; i++) {
+            tableCards[i] = tableArray[i].toString().toStdString();
+            onAddWidgetTable(tableCards[i], i);
+        }
+        for(int i = 0; i < ColodCardsSize; i++){
+            onAddWidgetColod(i);
+        }
+        if(ColodCardsSize == 0 && json["isShuffl"].toBool()){
+            onAddWidgetColod(0);
+            isShuffl = true;
+            ui->label_4->setText(QString::fromStdString("Shuffling (" + std::to_string(json["pointsX"].toInt() + 1) + "x)"));
+            ui->label_4->show();
+        }
+        for(Player* playe : players){
+            int pid = playe->getId();
+            std::string (&Cards)[36] = playe->getCards();
+            int CardsSize = 0;
+            if(pid == id){
+                CardsSize = json["size"].toInt();
+                for(int i = 0; i < CardsSize; i++){
+                    Cards[i] = playerArray[i].toString().toStdString();
+                    onAddWidgetPlayer(playe, Cards[i], i);
+                }
+                playe->setPoints(json["points"].toInt());
+            }
+            else{
+                switch(pid){
+                case 0:
+                    playe->setPoints(json["p0points"].toInt());
+                    CardsSize = json["p0size"].toInt();
+                    for(int i = 0; i < CardsSize; i++){
+                        onAddWidgetBot(playe, i);
+                    }
+                    break;
+                case 1:
+                    playe->setPoints(json["p1points"].toInt());
+                    CardsSize = json["p1size"].toInt();
+                    for(int i = 0; i < CardsSize; i++){
+                        onAddWidgetBot(playe, i);
+                    }
+                    break;
+                case 2:
+                    playe->setPoints(json["p2points"].toInt());
+                    CardsSize = json["p2size"].toInt();
+                    for(int i = 0; i < CardsSize; i++){
+                        onAddWidgetBot(playe, i);
+                    }
+                    break;
+                case 3:
+                    playe->setPoints(json["p3points"].toInt());
+                    CardsSize = json["p3size"].toInt();
+                    for(int i = 0; i < CardsSize; i++){
+                        onAddWidgetBot(playe, i);
+                    }
+                    break;
+                }
+            }
+            playe->setCardsSize(CardsSize);
+        }
+        ui->label_12->show();
+        if(ui->label_26->text() == "Queen of Spades Mode: On")
+            ui->label_11->show();
+        if(ui->label_25->text() == "Point Limit: 225")
+            ui->label_12->setText("225");
+        else
+            ui->label_12->setText("125");
+
+        SaveWindowGeometry();
+        Resizing();
+
+        if(json["move"].toInt() == id + 1 && json["bridge"].toBool()){
+            Bridge = true;
+            pushButtonBridge();
+
+            if(tableCards[tableCardsSize - 1][0] == 'J' || !json["secMove"].toBool()){
+                if(isFullscreen){
+                    ui->pushButton_6->resize(QSize(81 * scaleFactor,31 * scaleFactor));
+                    ui->pushButton_6->move(QPoint(ui->pushButton_6->pos().x(), ui->pushButton_6->pos().y() + (5 * scaleFactor)));
+                }
+                else{
+                    ui->pushButton_6->resize(QSize(81,31));
+                    ui->pushButton_6->move(QPoint(ui->pushButton_6->pos().x(), ui->pushButton_6->pos().y() + 5));
+                }
+            }
+        }
+    }
+    else{
+        if(tableCardsSize != json["tableSize"].toInt()){
+            cardSound();
+            for(int i = 0; i < tableCardsSize; i++){
+                delete TableButtons[i];
+                TableButtons[i] = nullptr;
+                tableCards[i] = "";
+            }
+            tableCardsSize = json["tableSize"].toInt();
+            for (int i = 0; i < tableCardsSize; i++) {
+                tableCards[i] = tableArray[i].toString().toStdString();
+                onAddWidgetTable(tableCards[i], i);
+            }
+        }
+        if(ColodCardsSize != json["colodSize"].toInt()){
+            cardSound();
+            if(ColodCardsSize == 0 && isShuffl){
+                ui->label_4->hide();
+                delete ColodButtons[0];
+                ColodButtons[0] = nullptr;
+            }
+            for(int i = 0; i < ColodCardsSize; i++){
+                delete ColodButtons[i];
+                ColodButtons[i] = nullptr;
+            }
+            ColodCardsSize = json["colodSize"].toInt();
+            for(int i = 0; i < ColodCardsSize; i++){
+                onAddWidgetColod(i);
+            }
+            if(ColodCardsSize == 0 && json["isShuffl"].toBool()){
+                onAddWidgetColod(0);
+                isShuffl = true;
+                ui->label_4->setText(QString::fromStdString("Shuffling (" + std::to_string(json["pointsX"].toInt() + 1) + "x)"));
+                ui->label_4->show();
+            }
+        }
+        int index = 0;
+        int finalindex = 0;
+        std::string newDiff = "";
+        for(Player* playe : players){
+            playe->deleteButtons();
+
+            int pid = playe->getId();
+            std::string (&Cards)[36] = playe->getCards();
+            int CardsSize = 0;
+            if(pid == id){
+                CardsSize = json["size"].toInt();
+                for(int i = 0; i < CardsSize; i++){
+                    Cards[i] = playerArray[i].toString().toStdString();
+                    onAddWidgetPlayer(playe, Cards[i], i);
+                }
+                playe->setPoints(json["points"].toInt());
+            }
+            else{
+                switch(pid){
+                case 0:
+                    playe->setPoints(json["p0points"].toInt());
+                    CardsSize = json["p0size"].toInt();
+                    for(int i = 0; i < CardsSize; i++){
+                        onAddWidgetBot(playe, i);
+                    }
+                    break;
+                case 1:
+                    playe->setPoints(json["p1points"].toInt());
+                    CardsSize = json["p1size"].toInt();
+                    if(playe->getDifficulty() != json["p1difficulty"].toString().toStdString()){
+                        finalindex = index;
+                        newDiff = json["p1difficulty"].toString().toStdString();
+                    }
+                    for(int i = 0; i < CardsSize; i++){
+                        onAddWidgetBot(playe, i);
+                    }
+                    break;
+                case 2:
+                    playe->setPoints(json["p2points"].toInt());
+                    CardsSize = json["p2size"].toInt();
+                    if(playe->getDifficulty() != json["p2difficulty"].toString().toStdString()){
+                        finalindex = index;
+                        newDiff = json["p2difficulty"].toString().toStdString();
+                    }
+                    for(int i = 0; i < CardsSize; i++){
+                        onAddWidgetBot(playe, i);
+                    }
+                    break;
+                case 3:
+                    playe->setPoints(json["p3points"].toInt());
+                    CardsSize = json["p3size"].toInt();
+                    if(playe->getDifficulty() != json["p3difficulty"].toString().toStdString()){
+                        finalindex = index;
+                        newDiff = json["p3difficulty"].toString().toStdString();
+                    }
+                    for(int i = 0; i < CardsSize; i++){
+                        onAddWidgetBot(playe, i);
+                    }
+                    break;
+                }
+            }
+            index++;
+            playe->setCardsSize(CardsSize);
+        }
+
+        if(finalindex != 0){
+            Human* human = dynamic_cast<Human*>(players[finalindex]);
+            if (human) {
+                Bot* bot = new Bot(*human);
+                delete players[finalindex];
+                bot->setDifficulty(newDiff);
+                players[finalindex] = bot;
+                for(int i = 0; i < players[finalindex]->getCardsSize(); i++){
+                   onAddWidgetBot(players[finalindex], i);
+                }
+
+                if (players[finalindex]->getDifficulty() == "Middle"){
+                    players[finalindex]->getLabel()->setText("<html><span style='color: orange; font-size: 11pt; font-weight: 900; font-family: 'Segoe UI Black';'>M</span> "
+                                               + QString::fromStdString(players[finalindex]->getName() + " | Points: " + std::to_string(players[finalindex]->getPoints()) + "</html>"));
+                }
+                else if (players[finalindex]->getDifficulty() == "Hard"){
+                    players[finalindex]->getLabel()->setText("<html><span style='color: red; font-size: 11pt; font-weight: 900; font-family: 'Segoe UI Black';'>H</span> "
+                                               + QString::fromStdString(players[finalindex]->getName() + " | Points: " + std::to_string(players[finalindex]->getPoints()) + "</html>"));
+                }
+
+                if(isFullscreen){
+                    QString curText = players[finalindex]->getLabel()->text();
+                    int newFontSize = 11 * scaleFactor;
+                    QRegularExpression regex("font-size:\\s*\\d+pt");
+                    curText.replace(regex, QString("font-size: %1pt").arg(newFontSize));
+                    players[finalindex]->getLabel()->setText(curText);
+                }
+            }
+        }
+
+        if(Mmove == id + 1 && (Bridge != json["bridge"].toBool())){
+            if(Bridge){
+                Bridge = false;
+                pushButtonBridge();
+            }
+            else if(json["move"].toInt() == Mmove){
+                Bridge = true;
+                pushButtonBridge();
+
+                if(tableCards[tableCardsSize - 1][0] == 'J' || !json["secMove"].toBool()){
+                    if(isFullscreen){
+                        ui->pushButton_6->resize(QSize(81 * scaleFactor,31 * scaleFactor));
+                        ui->pushButton_6->move(QPoint(ui->pushButton_6->pos().x(), ui->pushButton_6->pos().y() + (5 * scaleFactor)));
+                    }
+                    else{
+                        ui->pushButton_6->resize(QSize(81,31));
+                        ui->pushButton_6->move(QPoint(ui->pushButton_6->pos().x(), ui->pushButton_6->pos().y() + 5));
+                    }
+                }
+            }
+        }
+    }
+
+    players[0]->setCheckForTake(json["check"].toBool());
+
+    ui->label->setText(QString::fromStdString(std::to_string(ColodCardsSize)));
+    PointsX = json["pointsX"].toInt();
+    ui->label_7->setText(QString::fromStdString("Points " + std::to_string(PointsX) + "x"));
+    Set = json["set"].toInt();
+    ui->label_8->setText(QString::fromStdString("Set: " + std::to_string(Set)));
+    Jackchoose = json["jackchoose"].toString().toStdString();
+    isShuffl = json["isShuffl"].toBool();
+    Bridge = json["bridge"].toBool();
+    secMove = json["secMove"].toBool();
+    Mmove = json["move"].toInt();
+
+    ui->pushButton_2->hide();
+    ui->pushButton_3->hide();
+    ui->pushButton_4->hide();
+    ui->pushButton_5->hide();
+    ui->label_3->hide();
+    if(Jackchoose == ""){
+        if(Mmove == id + 1 && tableCards[tableCardsSize - 1][0] == 'J'){
+            ui->pushButton_2->show();
+            ui->pushButton_3->show();
+            ui->pushButton_4->show();
+            ui->pushButton_5->show();
+        }
+    }
+    else{
+        if(Jackchoose == "c"){
+            ui->label_3->setStyleSheet("border-image: url(:/img/PNG-cards-1.3/chirva.png);");
+            ui->label_3->show();
+        }
+        else if(Jackchoose == "k"){
+            ui->label_3->setStyleSheet("border-image: url(:/img/PNG-cards-1.3/kresti.png);");
+            ui->label_3->show();
+        }
+        else if(Jackchoose == "b"){
+            ui->label_3->setStyleSheet("border-image: url(:/img/PNG-cards-1.3/bybna.png);");
+            ui->label_3->show();
+        }
+        else{
+            ui->label_3->setStyleSheet("border-image: url(:/img/PNG-cards-1.3/piki.png);");
+            ui->label_3->show();
+        }
+    }
+
+    if((((secMove && tableCards[tableCardsSize - 1][0] != 'J') || (players[0]->getCheckForTake() && !secMove)) && tableCards[tableCardsSize - 1][0] != '6') && Mmove == id + 1){
+        ui->pushButton->show();
+    }
+    else{
+        ui->pushButton->hide();
+    }
+
+    if(Mmove == id + 1){
+        ui->label_2->setText("Your turn");
+        ui->label_2->setStyleSheet("font-family: 'Segoe UI'; font-size: 8pt; border: 1px solid; border-color: rgb(46, 80, 200);  border-radius: 3px; background-color: rgb(0,81,80); color: white; font: bold;");
+    }
+    else{
+        for(Player* playe : players){
+            if(playe->getId() + 1 == Mmove){
+                ui->label_2->setText(QString::fromStdString(playe->getName()) + "\nturn");
+                ui->label_2->setStyleSheet("font-family: 'Segoe UI'; font-size: 8pt; border: 1px solid; border-color: rgb(192,192,192);  border-radius: 3px;  color: white; font: bold;");
+            }
+        }
+    }
+    if(isFullscreen && isInGame){
+        QString cs = ui->label_2->styleSheet();
+        ui->label_2->setStyleSheet(cs + QString(" font-size: %1pt; border-radius: %2px;").arg(8 * scaleFactor).arg(3 * scaleFactor));
+    }
+
+    for(Player* playe : players){
+        if (playe->getDifficulty() == "Middle"){
+            if(players.size() == 2){
+                playe->getLabel()->setText(QString::fromStdString(playe->getName() + " | Points: " + std::to_string(playe->getPoints())));
+            }
+            else{
+                playe->getLabel()->setText("<html><span style='color: orange; font-size: 11pt; font-weight: 900; font-family: 'Segoe UI Black';'>M</span> "
+                                           + QString::fromStdString(playe->getName() + " | Points: " + std::to_string(playe->getPoints()) + "</html>"));
+            }
+        }
+        else if (playe->getDifficulty() == "Hard"){
+            if(players.size() == 2){
+                playe->getLabel()->setText(QString::fromStdString(playe->getName() + " | Points: " + std::to_string(playe->getPoints())));
+            }
+            else{
+                playe->getLabel()->setText("<html><span style='color: red; font-size: 11pt; font-weight: 900; font-family: 'Segoe UI Black';'>H</span> "
+                                           + QString::fromStdString(playe->getName() + " | Points: " + std::to_string(playe->getPoints()) + "</html>"));
+            }
+        }
+        else{
+            playe->getLabel()->setText(QString::fromStdString(playe->getName() + " | Points: " + std::to_string(playe->getPoints())));
+        }
+        playe->getLabel()->show();
+    }
+    players[0]->getLabel()->setText(QString::fromStdString("Your Points: " + std::to_string(players[0]->getPoints())));
+
+    if(isFullscreen){
+        QString curText = ui->label_6->text();
+        int newFontSize = 11 * scaleFactor;
+        QRegularExpression regex("font-size:\\s*\\d+pt");
+        curText.replace(regex, QString("font-size: %1pt").arg(newFontSize));
+        ui->label_6->setText(curText);
+        curText = ui->label_14->text();
+        curText.replace(regex, QString("font-size: %1pt").arg(newFontSize));
+        ui->label_14->setText(curText);
+        curText = ui->label_15->text();
+        curText.replace(regex, QString("font-size: %1pt").arg(newFontSize));
+        ui->label_15->setText(curText);
+    }
+}
+
+void MainWindow::parseCard(int id, const std::string &card)
+{
+    cardSound();
+    players[id]->parseCard(card);
+}
+
+void MainWindow::gameChange()
+{
+    if(server)
+        server->GameChanged();
+}
+
+void MainWindow::parseBridge(int index)
+{
+    if(Mmove - 1 == index){
+        players[index]->setJackKol(0);
+        server->GameChanged();
+        gameEnd();
+    }
+}
+
+void MainWindow::parseSuit(int index, QString suit)
+{
+    if(Mmove - 1 == index){
+        if(Bridge)
+            Bridge = false;
+
+        Jackchoose = suit.toStdString();
+        Mmove = nextOne(Mmove, players.size());
+        if(Mmove == 1){
+            ui->label_2->setText("Your turn");
+            ui->label_2->setStyleSheet("font-family: 'Segoe UI'; font-size: 8pt; border: 1px solid; border-color: rgb(46, 80, 200);  border-radius: 3px; background-color: rgb(0,81,80); color: white; font: bold;");
+        }
+        else {
+            ui->label_2->setText(QString::fromStdString(players[Mmove - 1]->getName()) + "\nturn");
+            ui->label_2->setStyleSheet("font-family: 'Segoe UI'; font-size: 8pt; border: 1px solid; border-color: rgb(192,192,192);  border-radius: 3px;  color: white; font: bold;");
+        }
+        if(isFullscreen && isInGame){
+            QString cs = ui->label_2->styleSheet();
+            ui->label_2->setStyleSheet(cs + QString(" font-size: %1pt; border-radius: %2px;").arg(8 * scaleFactor).arg(3 * scaleFactor));
+        }
+        secMove = 0;
+        players[index]->setJackKol(0);
+
+        if(suit == "c")
+            ui->label_3->setStyleSheet("border-image: url(:/img/PNG-cards-1.3/chirva.png);");
+        else if(suit == "k")
+            ui->label_3->setStyleSheet("border-image: url(:/img/PNG-cards-1.3/kresti.png);");
+        else if(suit == "b")
+            ui->label_3->setStyleSheet("border-image: url(:/img/PNG-cards-1.3/bybna.png);");
+        else
+            ui->label_3->setStyleSheet("border-image: url(:/img/PNG-cards-1.3/piki.png);");
+
+        ui->label_3->show();
+    }
+}
+
+QString MainWindow::endMessage(int index, int id)
+{
+    std::string massage;
+    if(index != id){
+        massage = "Unfortunately. You lost!|n|The Winner is " + players[index]->getName() + "! Points: "
+                              + std::to_string(players[index]->getPoints()) + "|n|Your points: " + std::to_string(players[id]->getPoints());
+        for(int i = 0; i < players.size(); i++){
+            if(i != index || i != id){
+                massage = massage + "|n|" + players[i]->getName() + " points: " + std::to_string(players[i]->getPoints());
+            }
+        }
+    }
+    else{
+        massage = "Congratulations! You won!!|n|The Winner is " + players[index]->getName() + "! Points: "
+                              + std::to_string(players[index]->getPoints());
+
+        for(int i = 0; i < players.size(); i++){
+            if(i != index){
+                massage = massage + "|n|" + players[i]->getName() + " points: " + std::to_string(players[i]->getPoints());
+            }
+        }
+    }
+
+    if(Bridge)
+        massage = "Bridge!|n|" + massage;
+
+    return QString::fromStdString(massage);
 }
 
 void MainWindow::hubParseHelper(QPushButton *bigButton, QPoint firstCords, QPoint secondCords, int jsonBig, QPushButton *swap, QComboBox *upper,
@@ -589,6 +1318,183 @@ void MainWindow::hubParseHelper(QPushButton *bigButton, QPoint firstCords, QPoin
             }
         }
     }
+}
+
+void MainWindow::suitChoose(std::string j, QString url)
+{
+    ui->pushButton_2->hide();
+    ui->pushButton_3->hide();
+    ui->pushButton_4->hide();
+    ui->pushButton_5->hide();
+    ui->label_3->show();
+    if(server){
+        if(Bridge){
+            Bridge = false;
+            pushButtonBridge();
+        }
+        Jackchoose = j;
+        Mmove = nextOne(1, players.size());
+        ui->label_2->setText(QString::fromStdString(players[Mmove - 1]->getName()) + "\nturn");
+        ui->label_2->setStyleSheet("font-family: 'Segoe UI'; font-size: 8pt; border: 1px solid; border-color: rgb(192,192,192);  border-radius: 3px;  color: white; font: bold;");
+        if(isFullscreen && isInGame){
+            QString cs = ui->label_2->styleSheet();
+            ui->label_2->setStyleSheet(cs + QString(" font-size: %1pt; border-radius: %2px;").arg(8 * scaleFactor).arg(3 * scaleFactor));
+        }
+        secMove = 0;
+        players[0]->setJackKol(0);
+
+        AutoSave();
+        server->GameChanged();
+    }
+    ui->label_3->setStyleSheet(url);
+}
+
+void MainWindow::replaceHumanFor2()
+{
+    ui->label_11->setGeometry(savedlabel11Geo);
+    ui->label_12->setGeometry(savedlabel12Geo);
+    ui->label_13->setGeometry(savedlabel13Geo);
+    ui->label_12->setStyleSheet(savedLabel12Style);
+
+    ui->label_11->move(68, 150);
+    ui->label_12->move(34, 150);
+    ui->label_13->move(12, 150);
+
+    savedlabel11Geo = ui->label_11->geometry();
+    savedlabel12Geo = ui->label_12->geometry();
+    savedlabel13Geo = ui->label_13->geometry();
+
+    ui->label_13->show();
+
+    if(isFullscreen){
+        scaleWidget(ui->label_11);
+        scaleWidget(ui->label_12);
+        ui->label_12->setStyleSheet(QString("font-weight: %1; font-family: 'Segoe UI Black'; font-size: %2pt; color: #c5c5c5").arg(900 * scaleFactor).arg(11 * scaleFactor));
+        scaleWidget(ui->label_13);
+        std::string dif = players[1]->getDifficulty();
+        if(dif == "Middle"){
+            ui->label_13->setStyleSheet(QString("font-weight: %1; font-size: %2pt; font-family: 'Segoe UI Black'; color: orange").arg(900 * scaleFactor).arg(11 * scaleFactor));
+        }
+        else if(dif == "Hard"){
+            ui->label_13->setStyleSheet(QString("font-weight: %1; font-size: %2pt; font-family: 'Segoe UI Black'; color: red").arg(900 * scaleFactor).arg(11 * scaleFactor));
+        }
+        QPoint curWidgetPos = ui->label_13->pos();
+        int timePos = ui->label_8->pos().y() - 5 - ui->label_13->height();
+        ui->label_13->move(curWidgetPos.x() * scaleFactor, timePos);
+
+        curWidgetPos = ui->label_12->pos();
+        ui->label_12->move(ui->label_13->pos().x() + ui->label_13->width() + (4 * scaleFactor), timePos);
+
+        curWidgetPos = ui->label_11->pos();
+        ui->label_11->move(ui->label_12->pos().x() + ui->label_12->width() + (3 * scaleFactor), timePos);
+    }
+    else{
+        std::string dif = players[1]->getDifficulty();
+        if(dif == "Middle"){
+            ui->label_13->setStyleSheet(QString("font-weight: %1; font-size: %2pt; font-family: 'Segoe UI Black'; color: orange").arg(900).arg(11));
+        }
+        else if(dif == "Hard"){
+            ui->label_13->setStyleSheet(QString("font-weight: %1; font-size: %2pt; font-family: 'Segoe UI Black'; color: red").arg(900).arg(11));
+        }
+    }
+}
+
+void MainWindow::leaveGame()
+{
+    if(server){
+        delete server;
+        server = nullptr;
+    }
+    if(client){
+        delete client;
+        client = nullptr;
+    }
+
+    isInGame = false;
+    if(Bridge){
+        Bridge = false;
+        if(Mmove == 1)
+            pushButtonBridge();
+    }
+
+    for (Player* playe : players) {
+        delete playe;
+    }
+    players.clear();
+
+    if(ColodCardsSize == 0){
+        delete ColodButtons[0];
+        ColodButtons[0] = nullptr;
+    }
+    for(int i = 0; i < ColodCardsSize; i++){
+        delete ColodButtons[i];
+        ColodButtons[i] = nullptr;
+        ColodCards[i] = "";
+    }
+    for(int i = 0; i < tableCardsSize; i++){
+        delete TableButtons[i];
+        TableButtons[i] = nullptr;
+        tableCards[i] = "";
+    }
+
+    ColodCardsSize = 0;
+    tableCardsSize = 0;
+
+    isShuffl = false;
+    PointsX = 1;
+    ui->label->setVisible(false);
+    ui->label_2->setVisible(false);
+
+    ui->pushButton->hide();
+    ui->pushButton_6->hide();
+    ui->pushButton_2->hide();
+    ui->pushButton_3->hide();
+    ui->pushButton_4->hide();
+    ui->pushButton_5->hide();
+    ui->pushButton_10->hide();
+    ui->pushButton_11->hide();
+    ui->pushButton_14->hide();
+    speedUp = false;
+    ui->pushButton_14->setStyleSheet("font-family: 'Segoe UI'; font-size: 8pt; border: 1px solid; border-color: rgb(192,192,192); border-radius: 10px; background-color: rgb(230,230,230); color: black; font: bold;");
+    ui->label_3->hide();
+    ui->label_4->hide();
+    ui->label_5->hide();
+    ui->label_14->hide();
+    ui->label_15->hide();
+    ui->label_6->hide();
+    ui->label_7->hide();
+    ui->label_8->hide();
+    ui->label_11->hide();
+    ui->label_12->hide();
+    ui->label_13->hide();
+    ui->label_14->hide();
+    ui->label_15->hide();
+    ui->scrollArea->hide();
+    ui->label_7->setText(QString::fromStdString("Points " + std::to_string(PointsX) + "x"));
+
+    if(timer)
+        delete timer;
+    ui->pushButton_12->show();
+    ui->pushButton_13->show();
+    ui->pushButton_7->show();
+    ui->pushButton_8->show();
+    ui->label_11->hide();
+    ui->label_12->hide();
+    ui->label_13->hide();
+    ui->scrollArea->hide();
+    ui->label_9->show();
+    ui->label_10->show();
+    ui->label_16->show();
+    ui->line->show();
+    ui->line_2->show();
+
+    player->stop();
+    player->setSource(QUrl::fromLocalFile(tempFilePathMenu));
+    audioOutput->setVolume((musicvol / 100.0) * 0.1);
+    player->setLoops(-1);
+    player->play();
+
+    Resizing();
 }
 
 void MainWindow::startCheck(int index)
@@ -634,7 +1540,7 @@ void MainWindow::lable3Style(QString param)
 void MainWindow::botNoChoice()
 {
     secMove = 0;
-    Mmove = nextOne(Mmove);
+    Mmove = nextOne(Mmove, players.size());
     if(Mmove == 1){
         ui->label_2->setText("Your turn");
         ui->label_2->setStyleSheet("font-family: 'Segoe UI'; font-size: 8pt; border: 1px solid; border-color: rgb(46, 80, 200);  border-radius: 3px; background-color: rgb(0,81,80); color: white; font: bold;");
@@ -688,7 +1594,6 @@ void MainWindow::pushButtonBridge()
             ui->pushButton_6->move(QPoint(ui->pushButton->pos().x(), ui->pushButton->pos().y() - 5));
             ui->pushButton->resize(QSize(ui->pushButton->size().width(), ui->pushButton->size().height() - 15));
             ui->pushButton->move(QPoint(ui->pushButton->pos().x(), ui->pushButton->pos().y() + 14));
-            qDebug() << ui->pushButton->geometry();
         }
     }
     else{
@@ -749,6 +1654,7 @@ void MainWindow::onAddWidgetPlayer(Player* pl, std::string card, int iter)
     QPixmap pix(QString::fromStdString(img));
     QIcon ButtonIcon(pix);
     QHBoxLayout* layout = qobject_cast<QHBoxLayout*>( pl->getLayout()->layout());
+
     QPushButton* (&playerButtons)[36] = pl->getButtons();
     playerButtons[iter] = new QPushButton("", pl->getLayout());
     layout->insertWidget(0,playerButtons[iter]);
@@ -807,7 +1713,7 @@ void MainWindow::onAddWidgetBot(Player* pl, int iter)
             );
     }
     else{
-        QPixmap pix(":/img/PNG-cards-1.3/card_back.jfif");
+        QPixmap pix(":/img/PNG-cards-1.3/card_back.png");
         QIcon ButtonIcon(pix);
         QHBoxLayout* layout = qobject_cast<QHBoxLayout*>( pl->getLayout()->layout());
         botButtons[iter] = new QPushButton("", pl->getLayout());
@@ -830,7 +1736,7 @@ void MainWindow::onAddWidgetBot(Player* pl, int iter)
 
 void MainWindow::onAddWidgetColod(int iter)
 {
-    QPixmap pix(":/img/PNG-cards-1.3/card_back.jfif");
+    QPixmap pix(":/img/PNG-cards-1.3/card_back.png");
     QIcon ButtonIcon(pix);
     QHBoxLayout* layout = qobject_cast<QHBoxLayout*>( ui->horizontalLayoutWidget_3->layout());
     ColodButtons[iter] = new QPushButton("", ui->horizontalLayoutWidget_3);
@@ -884,13 +1790,13 @@ void MainWindow::onAddWidgetTable(std::string card, int iter)
 
 void MainWindow::onRemoveWidgetPlayer()
 {
-    if(dynamic_cast<Human*>(players[Mmove - 1])){
+    if((Mmove == 1 && server) || (Mmove == players[0]->getId() + 1 && client)){
         QPushButton* button = qobject_cast<QPushButton*>(sender());
         bool maincheck = false;
         int mv;
-        int playerCardsSize = players[Mmove - 1]->getCardsSize();
-        std::string (&playerCards)[36] = players[Mmove - 1]->getCards();
-        QPushButton* (&playerButtons)[36] = players[Mmove - 1]->getButtons();
+        int playerCardsSize = players[0]->getCardsSize();
+        std::string (&playerCards)[36] = players[0]->getCards();
+        QPushButton* (&playerButtons)[36] = players[0]->getButtons();
 
         for(int i = 0; i < playerCardsSize; i++){
             bool check;
@@ -901,43 +1807,49 @@ void MainWindow::onRemoveWidgetPlayer()
                 check = possibleMove(playerCards[i], "0" + Jackchoose, 0);
             }
             if(button == playerButtons[i] && check == true){
-                cardSound();
+                if(server){
+                    cardSound();
 
-                if(Bridge){
-                    Bridge = false;
-                    pushButtonBridge();
-                }
+                    if(Bridge){
+                        Bridge = false;
+                        pushButtonBridge();
+                    }
 
-                Jackchoose = "";
-                maincheck = true;
-                ui->pushButton->hide();
-                ui->pushButton_2->hide();
-                ui->pushButton_3->hide();
-                ui->pushButton_4->hide();
-                ui->pushButton_5->hide();
-                ui->label_3->hide();
+                    Jackchoose = "";
+                    maincheck = true;
+                    ui->pushButton->hide();
+                    ui->pushButton_2->hide();
+                    ui->pushButton_3->hide();
+                    ui->pushButton_4->hide();
+                    ui->pushButton_5->hide();
+                    ui->label_3->hide();
 
-                if(playerCards[i][0] == 'J'){
-                    players[Mmove - 1]->setJackKol(players[Mmove - 1]->getJackKol() + 1);
+                    if(playerCards[i][0] == 'J'){
+                        players[Mmove - 1]->setJackKol(players[Mmove - 1]->getJackKol() + 1);
+                    }
+                    else{
+                        players[Mmove - 1]->setJackKol(0);
+                    }
+                    tableCards[tableCardsSize] = playerCards[i];
+                    onAddWidgetTable(tableCards[tableCardsSize], tableCardsSize);
+                    tableCardsSize++;
+                    delete playerButtons[i];
+                    playerButtons[i] = nullptr;
+                    playerCards[i] = "";
+                    mv = Mmove;
+                    for(int j = i; j < playerCardsSize - 1; j++){
+                        onAddWidgetPlayer(players[Mmove - 1], playerCards[j + 1], j);
+                        delete playerButtons[j + 1];
+                        playerButtons[j + 1] = nullptr;
+                        playerCards[j] = playerCards[j + 1];
+                        playerCards[j + 1] = "";
+                    }
+                    players[Mmove - 1]->setCardsSize(--playerCardsSize);
                 }
                 else{
-                    players[Mmove - 1]->setJackKol(0);
+                    client->cardPressed(QString::fromStdString(players[0]->getCards()[i]));
                 }
-                tableCards[tableCardsSize] = playerCards[i];
-                onAddWidgetTable(tableCards[tableCardsSize], tableCardsSize);
-                tableCardsSize++;
-                delete playerButtons[i];
-                playerButtons[i] = nullptr;
-                playerCards[i] = "";
-                mv = Mmove;
-                for(int j = i; j < playerCardsSize - 1; j++){
-                    onAddWidgetPlayer(players[Mmove - 1], playerCards[j + 1], j);
-                    delete playerButtons[j + 1];
-                    playerButtons[j + 1] = nullptr;
-                    playerCards[j] = playerCards[j + 1];
-                    playerCards[j + 1] = "";
-                }
-                players[Mmove - 1]->setCardsSize(playerCardsSize - 1);
+
                 break;
             }
         }
@@ -950,67 +1862,78 @@ void MainWindow::onRemoveWidgetPlayer()
                 secondmove();
                 operation(mv);
             }
+            qDebug() << players[0]->getJackKol();
             if(tableCards[tableCardsSize - 1][0] != '6' && !Bridge){
                 gameEnd();
             }
         }
 
-        if(isFullscreen && Mmove == 1)
-            ui->scrollAreaWidgetContents->setMinimumSize(QSize((70*scaleFactor)*playerCardsSize,0));
-        else if(Mmove == 1)
-            ui->scrollAreaWidgetContents->setMinimumSize(QSize(70*playerCardsSize,0));
+        if(server){
+            if(isFullscreen && Mmove == 1)
+                ui->scrollAreaWidgetContents->setMinimumSize(QSize((70*scaleFactor)*playerCardsSize,0));
+            else if(Mmove == 1)
+                ui->scrollAreaWidgetContents->setMinimumSize(QSize(70*playerCardsSize,0));
 
-        AutoSave();
+            AutoSave();
+            server->GameChanged();
+        }
     }
 }
 
 void MainWindow::onRemoveWidgetColod()
 {   
-    if(Mmove == 1 && players[0]->getCheckForTake() == 0){
+    if((Mmove == 1 && players[0]->getCheckForTake() == 0 && server) || (Mmove == players[0]->getId() + 1 && players[0]->getCheckForTake() == 0 && client)){
 
         int playerCardsSize = players[0]->getCardsSize();
 
         if(tableCards[tableCardsSize - 1][0] == '6' || secMove == 0){
+            if(server){
+                if(Bridge){
+                    Bridge = false;
+                    pushButtonBridge();
+                }
 
-            if(Bridge){
-                Bridge = false;
-                pushButtonBridge();
+                std::string (&playerCards)[36] = players[0]->getCards();
+
+                if(ColodCardsSize == 0){
+                    shuffling();
+                }
+
+                cardSound();
+
+                playerCards[playerCardsSize] = ColodCards[ColodCardsSize - 1];
+                onAddWidgetPlayer(players[0], playerCards[playerCardsSize], playerCardsSize);
+                players[0]->setCardsSize(++playerCardsSize);
+                ColodCards[ColodCardsSize - 1] = "";
+                delete ColodButtons[ColodCardsSize - 1];
+                ColodButtons[ColodCardsSize - 1] = nullptr;
+                ColodCardsSize--;
+                ui->label->setText(QString::fromStdString(std::to_string(ColodCardsSize)));
+                if(tableCards[tableCardsSize - 1][0] != '6'){
+                    ui->pushButton->show();
+                    players[0]->setCheckForTake(1);
+                }
+                if(ColodCardsSize == 0){
+                    onAddWidgetColod(0);
+                    isShuffl = true;
+                    ui->label_4->setText(QString::fromStdString("Shuffling (" + std::to_string(PointsX + 1) + "x)"));
+                    ui->label_4->show();
+                }
             }
-
-            std::string (&playerCards)[36] = players[0]->getCards();
-
-            if(ColodCardsSize == 0){
-                shuffling();
-            }
-
-            cardSound();
-
-            playerCards[playerCardsSize] = ColodCards[ColodCardsSize - 1];
-            onAddWidgetPlayer(players[0], playerCards[playerCardsSize], playerCardsSize);
-            players[0]->setCardsSize(++playerCardsSize);
-            ColodCards[ColodCardsSize - 1] = "";
-            delete ColodButtons[ColodCardsSize - 1];
-            ColodButtons[ColodCardsSize - 1] = nullptr;
-            ColodCardsSize--;
-            ui->label->setText(QString::fromStdString(std::to_string(ColodCardsSize)));
-            if(tableCards[tableCardsSize - 1][0] != '6'){
-                ui->pushButton->show();
-                players[0]->setCheckForTake(1);
-            }
-            if(ColodCardsSize == 0){
-                onAddWidgetColod(0);
-                isShuffl = true;
-                ui->label_4->setText(QString::fromStdString("Shuffling (" + std::to_string(PointsX + 1) + "x)"));
-                ui->label_4->show();
+            else{
+                client->colodPressed();
             }
         }
 
-        if(isFullscreen)
-            ui->scrollAreaWidgetContents->setMinimumSize(QSize((70*scaleFactor)*playerCardsSize,0));
-        else
-            ui->scrollAreaWidgetContents->setMinimumSize(QSize(70*playerCardsSize,0));
+        if(server){
+            if(isFullscreen)
+                ui->scrollAreaWidgetContents->setMinimumSize(QSize((70*scaleFactor)*playerCardsSize,0));
+            else
+                ui->scrollAreaWidgetContents->setMinimumSize(QSize(70*playerCardsSize,0));
 
-        AutoSave();
+            AutoSave();
+            server->GameChanged();
+        }
     }
 }
 
@@ -1045,7 +1968,6 @@ void MainWindow::onRemoveWidgetColodBot(){
             }
         }
     }
-    AutoSave();
 }
 
 void MainWindow::shuffling()
@@ -1109,7 +2031,7 @@ void MainWindow::cleaner(bool sh)
     ColodCardsSize = 0;
     tableCardsSize = 0;
 
-    isShuffl = 0;
+    isShuffl = false;
     PointsX = 1;
     ui->label->setVisible(false);
     ui->label_2->setVisible(false);
@@ -1224,14 +2146,14 @@ void MainWindow::gameEnd()
             ind++;
         }
 
-        QMessageBox msgBox(this);
-        msgBox.setStandardButtons(QMessageBox::Ok);
-        msgBox.setDefaultButton(QMessageBox::Ok);
-        msgBox.setStyleSheet(massBoxStyle);
+        QMessageBox* msgBox = new QMessageBox(this);
+        msgBox->setStandardButtons(QMessageBox::Ok);
+        msgBox->setDefaultButton(QMessageBox::Ok);
 
-        foreach (QPushButton *button, msgBox.findChildren<QPushButton*>()) {
+        foreach (QPushButton *button, msgBox->findChildren<QPushButton*>()) {
             button->setCursor(Qt::PointingHandCursor);
         }
+        msgBox->setStyleSheet(massBoxStyle);
 
         std::string massage = "";
 
@@ -1252,7 +2174,7 @@ void MainWindow::gameEnd()
             isInGame = false;
 
             delete timer;
-            msgBox.setWindowTitle("Game over");
+            msgBox->setWindowTitle("Game over");
 
             if(index != 0){
                 massage = "Unfortunately. You lost!\nThe Winner is " + players[index]->getName() + "! Points: "
@@ -1272,6 +2194,8 @@ void MainWindow::gameEnd()
                 }
             }
 
+            server->sendEndMessage(index);
+
             if(Bridge)
                 massage = "Bridge!\n" + massage;
 
@@ -1279,53 +2203,64 @@ void MainWindow::gameEnd()
             if(!ui->pushButton_6->isHidden())
                 pushButtonBridge();
 
-            msgBox.setText(QString::fromStdString(massage));
-            msgBox.exec();
-            clickedSound();
+            server->GameChanged();
 
-            if(server){
-                delete server;
-                server = nullptr;
-            }
+            msgBox->setText(QString::fromStdString(massage));
+            msgBox->setModal(true);
 
-            cleaner();
+            connect(msgBox, &QMessageBox::finished, this, [=](int result){
+                if (result == QMessageBox::Ok) {
+                    clickedSound();
+                }
 
-            for (Player* playe : players) {
-                delete playe;
-            }
-            players.clear();
+                if(server){
+                    delete server;
+                    server = nullptr;
+                }
 
-            ui->pushButton_12->show();
-            ui->pushButton_13->show();
-            ui->pushButton_7->show();
-            ui->pushButton_8->show();
-            ui->pushButton_14->hide();
-            speedUp = false;
-            ui->pushButton_14->setStyleSheet("font-family: 'Segoe UI'; font-size: 8pt; border: 1px solid; border-color: rgb(192,192,192); border-radius: 10px; background-color: rgb(230,230,230); color: black; font: bold;");
-            ui->label_11->hide();
-            ui->label_12->hide();
-            ui->label_13->hide();
-            ui->scrollArea->hide();
-            ui->label_9->show();
-            ui->label_10->show();
-            ui->label_16->show();
-            ui->line->show();
-            ui->line_2->show();
-            std::ofstream fout;
-            fout.open(dirGame.toStdString());
-            fout.close();
+                cleaner();
 
-            player->stop();
-            player->setSource(QUrl::fromLocalFile(tempFilePathMenu));
-            audioOutput->setVolume((musicvol / 100.0) * 0.1);
-            player->setLoops(-1);
-            player->play();
+                for (Player* playe : players) {
+                    delete playe;
+                }
+                players.clear();
 
-            Resizing();
+                ui->pushButton_12->show();
+                ui->pushButton_13->show();
+                ui->pushButton_7->show();
+                ui->pushButton_8->show();
+                ui->pushButton_14->hide();
+                speedUp = false;
+                ui->pushButton_14->setStyleSheet("font-family: 'Segoe UI'; font-size: 8pt; border: 1px solid; border-color: rgb(192,192,192); border-radius: 10px; background-color: rgb(230,230,230); color: black; font: bold;");
+                ui->label_11->hide();
+                ui->label_12->hide();
+                ui->label_13->hide();
+                ui->scrollArea->hide();
+                ui->label_9->show();
+                ui->label_10->show();
+                ui->label_16->show();
+                ui->line->show();
+                ui->line_2->show();
+                std::ofstream fout;
+                fout.open(dirGame.toStdString());
+                fout.close();
+
+                player->stop();
+                player->setSource(QUrl::fromLocalFile(tempFilePathMenu));
+                audioOutput->setVolume((musicvol / 100.0) * 0.1);
+                player->setLoops(-1);
+                player->play();
+
+                Resizing();
+
+                msgBox->deleteLater();
+            });
+
+            msgBox->open();
         }
         else{
             delete timer;
-            msgBox.setWindowTitle("Set");
+            msgBox->setWindowTitle("Set");
 
             bool check = false;
             for(int i = 0; i < losersCounter; i++){
@@ -1347,6 +2282,35 @@ void MainWindow::gameEnd()
                 }
             }
 
+            std::string msg;
+            for(int j = 1; j < players.size(); j++){
+                check = false;
+                for(int i = 0; i < losersCounter; i++){
+                    if(losers[losers.size() - (i + 1)] == players[j]){
+                        msg = "Unfortunately. You lost!|n|Your points: " + std::to_string(players[j]->getPoints());
+                        check = true;
+                        break;
+                    }
+                }
+                if(check){
+                    for(int i = 0; i < players.size(); i++){
+                        if(j != i)
+                            msg = msg + "|n|" + players[i]->getName() + " points: " + std::to_string(players[i]->getPoints());
+                    }
+                }
+                else{
+                    msg = "Your points: " + std::to_string(players[j]->getPoints());
+                    for(int i = 0; i < players.size(); i++){
+                        if(j != i)
+                            msg = msg + "|n|" + players[i]->getName() + " points: " + std::to_string(players[i]->getPoints());
+                    }
+                }
+                if(Bridge)
+                    msg = "Bridge!|n|" + msg;
+
+                server->sendSetMessage(j, QString::fromStdString(msg));
+            }
+
             if(Bridge)
                 massage = "Bridge!\n" + massage;
 
@@ -1354,154 +2318,168 @@ void MainWindow::gameEnd()
             if(!ui->pushButton_6->isHidden())
                 pushButtonBridge();
 
-            msgBox.setText(QString::fromStdString(massage));
-            msgBox.exec();
+            server->GameChanged();
 
-            clickedSound();
+            msgBox->setText(QString::fromStdString(massage));
+            msgBox->setModal(true);
 
-            cleaner();
+            connect(msgBox, &QMessageBox::finished, this, [=](int result){
+                if (result == QMessageBox::Ok) {
+                    clickedSound();
+                }
 
-            bool checkForHuman = false;
+                cleaner();
 
-            for(Player* playe : players){
-                if (playe->getDifficulty() == "Middle"){
-                    if(players.size() == 2){
-                        playe->getLabel()->setText(QString::fromStdString(playe->getName() + " | Points: " + std::to_string(playe->getPoints())));
+                bool checkForHuman = false;
+
+                for(Player* playe : players){
+                    if (playe->getDifficulty() == "Middle"){
+                        if(players.size() == 2){
+                            playe->getLabel()->setText(QString::fromStdString(playe->getName() + " | Points: " + std::to_string(playe->getPoints())));
+                        }
+                        else{
+                            playe->getLabel()->setText("<html><span style='color: orange; font-size: 11pt; font-weight: 900; font-family: 'Segoe UI Black';'>M</span> "
+                                                       + QString::fromStdString(playe->getName() + " | Points: " + std::to_string(playe->getPoints()) + "</html>"));
+                        }
+                    }
+                    else if (playe->getDifficulty() == "Hard"){
+                        if(players.size() == 2){
+                            playe->getLabel()->setText(QString::fromStdString(playe->getName() + " | Points: " + std::to_string(playe->getPoints())));
+                        }
+                        else{
+                            playe->getLabel()->setText("<html><span style='color: red; font-size: 11pt; font-weight: 900; font-family: 'Segoe UI Black';'>H</span> "
+                                                       + QString::fromStdString(playe->getName() + " | Points: " + std::to_string(playe->getPoints()) + "</html>"));
+                        }
                     }
                     else{
-                        playe->getLabel()->setText("<html><span style='color: orange; font-size: 11pt; font-weight: 900; font-family: 'Segoe UI Black';'>M</span> "
-                                                   + QString::fromStdString(playe->getName() + " | Points: " + std::to_string(playe->getPoints()) + "</html>"));
+                        if(playe->isInGame()){
+                            checkForHuman = true;
+                        }
+                        playe->getLabel()->setText(QString::fromStdString(playe->getName() + " | Points: " + std::to_string(playe->getPoints())));
+                    }
+
+                    playe->getLabel()->show();
+                }
+
+                players[0]->getLabel()->setText(QString::fromStdString("Your Points: " + std::to_string(players[0]->getPoints())));
+
+                if(!checkForHuman)
+                    ui->pushButton_14->show();
+
+                ui->label->setVisible(true);
+                ui->label_2->setVisible(true);
+                ui->label_7->setVisible(true);
+                ui->label_8->setVisible(true);
+                ui->pushButton_10->setVisible(true);
+                ui->pushButton_11->setVisible(true);
+
+                if(QSMode)
+                    ui->label_11->setVisible(true);
+
+                ui->label_12->show();
+
+                if(players.size() == 2 && dynamic_cast<Bot*>(players[1]))
+                    ui->label_13->show();
+
+                ui->scrollArea->show();
+
+                Set++;
+                ui->label_8->setText(QString::fromStdString("Set: " + std::to_string(Set)));
+
+                Jackchoose = "";
+                Start();
+                int mv = Mmove;
+                if(dynamic_cast<Bot*>(players[Mmove - 1]) && tableCards[0][0] == 'J'){
+                    std::string (&botCards)[36] = players[Mmove - 1]->getCards();
+
+                    int sign[4];
+                    sign[0] = 0;
+                    sign[1] = 0;
+                    sign[2] = 0;
+                    sign[3] = 0;
+                    for(int i = 0; i < players[Mmove - 1]->getCardsSize(); i++){
+                        if(botCards[i][0] != 'J'){
+                            if(botCards[i][1] == 'c'){
+                                sign[0]++;
+                            }
+                            else if(botCards[i][1] == 'k'){
+                                sign[1]++;
+                            }
+                            else if(botCards[i][1] == 'b'){
+                                sign[2]++;
+                            }
+                            else if(botCards[i][1] == 'p'){
+                                sign[3]++;
+                            }
+                        }
+                    }
+                    int k = 0;
+                    for(int i = 0; i < 4; i++){
+                        if(sign[k] < sign[i]){
+                            k = i;
+                        }
+                    }
+                    if(k == 0){
+                        Jackchoose = "c";
+                        ui->label_3->setStyleSheet("border-image: url(:/img/PNG-cards-1.3/chirva.png);");
+                        ui->label_3->show();
+                    }
+                    else if(k == 1){
+                        Jackchoose = "k";
+                        ui->label_3->setStyleSheet("border-image: url(:/img/PNG-cards-1.3/kresti.png);");
+                        ui->label_3->show();
+                    }
+                    else if(k == 2){
+                        Jackchoose = "b";
+                        ui->label_3->setStyleSheet("border-image: url(:/img/PNG-cards-1.3/bybna.png);");
+                        ui->label_3->show();
+                    }
+                    else if(k == 3){
+                        Jackchoose = "p";
+                        ui->label_3->setStyleSheet("border-image: url(:/img/PNG-cards-1.3/piki.png);");
+                        ui->label_3->show();
                     }
                 }
-                else if (playe->getDifficulty() == "Hard"){
-                    if(players.size() == 2){
-                        playe->getLabel()->setText(QString::fromStdString(playe->getName() + " | Points: " + std::to_string(playe->getPoints())));
-                    }
-                    else{
-                        playe->getLabel()->setText("<html><span style='color: red; font-size: 11pt; font-weight: 900; font-family: 'Segoe UI Black';'>H</span> "
-                                                   + QString::fromStdString(playe->getName() + " | Points: " + std::to_string(playe->getPoints()) + "</html>"));
-                    }
+
+                secondmove();
+                operation(mv);
+
+                if(isFullscreen){
+                    QString curText = ui->label_6->text();
+                    int newFontSize = 11 * scaleFactor;
+                    QRegularExpression regex("font-size:\\s*\\d+pt");
+                    curText.replace(regex, QString("font-size: %1pt").arg(newFontSize));
+                    ui->label_6->setText(curText);
+                    curText = ui->label_14->text();
+                    curText.replace(regex, QString("font-size: %1pt").arg(newFontSize));
+                    ui->label_14->setText(curText);
+                    curText = ui->label_15->text();
+                    curText.replace(regex, QString("font-size: %1pt").arg(newFontSize));
+                    ui->label_15->setText(curText);
+                }
+
+                timer = new QTimer();
+                connect(timer, SIGNAL(timeout()), this, SLOT(botMove()));
+                if(speedUp){
+                    timer->start(100);
                 }
                 else{
-                    if(playe->isInGame()){
-                        checkForHuman = true;
-                    }
-                    playe->getLabel()->setText(QString::fromStdString(playe->getName() + " | Points: " + std::to_string(playe->getPoints())));
+                    timer->start(2000);
                 }
 
-                playe->getLabel()->show();
-            }
+                AutoSave();
+                server->setProcessingPaused(false);
+                server->GameChanged();
 
-            players[0]->getLabel()->setText(QString::fromStdString("Your Points: " + std::to_string(players[0]->getPoints())));
+                msgBox->deleteLater();
+            });
 
-            if(!checkForHuman)
-                ui->pushButton_14->show();
-
-            ui->label->setVisible(true);
-            ui->label_2->setVisible(true);
-            ui->label_7->setVisible(true);
-            ui->label_8->setVisible(true);
-            ui->pushButton_10->setVisible(true);
-            ui->pushButton_11->setVisible(true);
-
-            if(QSMode)
-                ui->label_11->setVisible(true);
-
-            ui->label_12->show();
-
-            if(players.size() == 2)
-                ui->label_13->show();
-
-            ui->scrollArea->show();
-
-            Set++;
-            ui->label_8->setText(QString::fromStdString("Set: " + std::to_string(Set)));
-
-            Start();
-            int mv = Mmove;
-            if(dynamic_cast<Bot*>(players[Mmove - 1]) && tableCards[0][0] == 'J'){
-                std::string (&botCards)[36] = players[Mmove - 1]->getCards();
-
-                int sign[4];
-                sign[0] = 0;
-                sign[1] = 0;
-                sign[2] = 0;
-                sign[3] = 0;
-                for(int i = 0; i < players[Mmove - 1]->getCardsSize(); i++){
-                    if(botCards[i][0] != 'J'){
-                        if(botCards[i][1] == 'c'){
-                            sign[0]++;
-                        }
-                        else if(botCards[i][1] == 'k'){
-                            sign[1]++;
-                        }
-                        else if(botCards[i][1] == 'b'){
-                            sign[2]++;
-                        }
-                        else if(botCards[i][1] == 'p'){
-                            sign[3]++;
-                        }
-                    }
-                }
-                int k = 0;
-                for(int i = 0; i < 4; i++){
-                    if(sign[k] < sign[i]){
-                        k = i;
-                    }
-                }
-                if(k == 0){
-                    Jackchoose = "c";
-                    ui->label_3->setStyleSheet("border-image: url(:/img/PNG-cards-1.3/chirva.png);");
-                    ui->label_3->show();
-                }
-                else if(k == 1){
-                    Jackchoose = "k";
-                    ui->label_3->setStyleSheet("border-image: url(:/img/PNG-cards-1.3/kresti.png);");
-                    ui->label_3->show();
-                }
-                else if(k == 2){
-                    Jackchoose = "b";
-                    ui->label_3->setStyleSheet("border-image: url(:/img/PNG-cards-1.3/bybna.png);");
-                    ui->label_3->show();
-                }
-                else if(k == 3){
-                    Jackchoose = "p";
-                    ui->label_3->setStyleSheet("border-image: url(:/img/PNG-cards-1.3/piki.png);");
-                    ui->label_3->show();
-                }
-            }
-
-            secondmove();
-            operation(mv);
-
-            if(isFullscreen){
-                QString curText = ui->label_6->text();
-                int newFontSize = 11 * scaleFactor;
-                QRegularExpression regex("font-size:\\s*\\d+pt");
-                curText.replace(regex, QString("font-size: %1pt").arg(newFontSize));
-                ui->label_6->setText(curText);
-                curText = ui->label_14->text();
-                curText.replace(regex, QString("font-size: %1pt").arg(newFontSize));
-                ui->label_14->setText(curText);
-                curText = ui->label_15->text();
-                curText.replace(regex, QString("font-size: %1pt").arg(newFontSize));
-                ui->label_15->setText(curText);
-            }
-
-            timer = new QTimer();
-            connect(timer, SIGNAL(timeout()), this, SLOT(botMove()));
-            if(speedUp){
-                timer->start(100);
-            }
-            else{
-                timer->start(2000);
-            }
-
-            AutoSave();
+            msgBox->open();
         }
     }
     else{
         AutoSave();
+        server->GameChanged();
     }
 }
 
@@ -1543,21 +2521,23 @@ bool MainWindow::possibleMove(std::string p, std::string t, bool ndmove)
     return check;
 }
 
-int MainWindow::nextOne(int mv){
+int MainWindow::nextOne(int mv, int size){
     int next;
-    if(mv < players.size()){
+    if(mv < size){
         next = mv + 1;
     }
     else{
         next = 1;
     }
 
-    while(!players[next - 1]->isInGame()){
-        if(next < players.size()){
-            next++;
-        }
-        else{
-            next = 1;
+    if(!client){
+        while(!players[next - 1]->isInGame()){
+            if(next < size){
+                next++;
+            }
+            else{
+                next = 1;
+            }
         }
     }
 
@@ -1569,7 +2549,7 @@ void MainWindow::operation(int mv)
     if(tableCards[tableCardsSize - 1] == "Qp" && QSMode == true){
         if(!secMove || playersCount == 2){
             secMove = 0;
-            int next = nextOne(mv);
+            int next = nextOne(mv, players.size());
 
             std::string (&Cards)[36] = players[next - 1]->getCards();
             int CardsSize = players[next - 1]->getCardsSize();
@@ -1622,7 +2602,7 @@ void MainWindow::operation(int mv)
                 }
             }
 
-            next = nextOne(next);
+            next = nextOne(next, players.size());
 
             Mmove = next;
             if(Mmove == 1){
@@ -1697,9 +2677,9 @@ void MainWindow::operation(int mv)
             }
             else if(!Bridge){
                 for(int i = 0; i < players[mv - 1]->getPass() + 1; i++){
-                    next = nextOne(mv + i);
+                    next = nextOne(mv + i, players.size());
                     if(i == players[mv - 1]->getPass()){
-                        next = nextOne(next);
+                        next = nextOne(next, players.size());
                         Mmove = next;
                         if(Mmove == 1){
                             ui->label_2->setText("Your turn");
@@ -1751,7 +2731,7 @@ void MainWindow::operation(int mv)
                 players[mv - 1]->setPass(0);
 
                 for(int i = 0; i < playersCount - 1; i++){
-                    next = nextOne(mv + i);
+                    next = nextOne(mv + i, players.size());
 
                     std::string (&Cards)[36] = players[next - 1]->getCards();
                     int CardsSize = players[next - 1]->getCardsSize();
@@ -1820,7 +2800,7 @@ void MainWindow::operation(int mv)
             }
             else if(!Bridge){
                 for(int i = 0; i < players[mv - 1]->getPass() + 1; i++){
-                    next = nextOne(mv + i);
+                    next = nextOne(mv + i, players.size());
                     std::string (&Cards)[36] = players[next - 1]->getCards();
                     int CardsSize = players[next - 1]->getCardsSize();
 
@@ -1877,7 +2857,7 @@ void MainWindow::operation(int mv)
                     }
 
                     if(i == players[mv - 1]->getPass()){
-                        next = nextOne(next);
+                        next = nextOne(next, players.size());
                         Mmove = next;
                         if(Mmove == 1){
                             ui->label_2->setText("Your turn");
@@ -1899,7 +2879,7 @@ void MainWindow::operation(int mv)
             }
             break;
         case '7': {
-            next = nextOne(mv);
+            next = nextOne(mv, players.size());
 
             std::string (&Cards)[36] = players[next - 1]->getCards();
             int CardsSize = players[next - 1]->getCardsSize();
@@ -1942,7 +2922,7 @@ void MainWindow::secondmove()
 {
     if(Mmove == 1){
         secMove = 0;
-        Mmove = nextOne(1);
+        Mmove = nextOne(1, players.size());
         ui->label_2->setText(QString::fromStdString(players[Mmove - 1]->getName()) + "\nturn");
         ui->label_2->setStyleSheet("font-family: 'Segoe UI'; font-size: 8pt; border: 1px solid; border-color: rgb(192,192,192);  border-radius: 3px;  color: white; font: bold;");
         if(isFullscreen && isInGame){
@@ -1994,7 +2974,7 @@ void MainWindow::secondmove()
     }
     else{
         int mv = Mmove;
-        Mmove = nextOne(Mmove);
+        Mmove = nextOne(Mmove, players.size());
 
         if(Mmove == 1){
             ui->label_2->setText("Your turn");
@@ -2030,7 +3010,7 @@ void MainWindow::secondmove()
         }
         else{
             for(int i = 0; i < players[mv - 1]->getCardsSize(); i++){
-                if(players[mv - 1]->getCards()[i][0] == tableCards[tableCardsSize - 1][0] || Bridge){
+                if(players[mv - 1]->getCards()[i][0] == tableCards[tableCardsSize - 1][0] || Bridge || (tableCards[tableCardsSize - 1][0] == 'J' && dynamic_cast<Human*>(players[mv - 1]))){
                     secMove = 1;
                     Mmove = mv;
                     ui->label_2->setText(QString::fromStdString(players[Mmove - 1]->getName()) + "\nturn");
@@ -2054,7 +3034,7 @@ void MainWindow::Start()
     Mmove = rand() % playersCount + 1;
 
     if(!players[Mmove - 1]->isInGame()){
-        Mmove = nextOne(Mmove);
+        Mmove = nextOne(Mmove, players.size());
     }
 
     for (int suit = 0; suit < 4; suit++) {
@@ -2187,7 +3167,7 @@ void MainWindow::AutoSave()
         fout << QSMode << "\n";
         fout << PointsMode << "\n";
         fout << Bridge << "\n";
-        fout << !ui->pushButton_14->isHidden();
+        fout << ui->pushButton_14->isVisible();
     }
     fout.close();
 }
@@ -2313,7 +3293,7 @@ void MainWindow::Resizing(QString label2Str)
         }
         else{
             setUiGeo();
-            if(Mmove != 1)
+            if((Mmove != 1 && server) || (Mmove != players[0]->getId() + 1 && client))
                 ui->label_2->setStyleSheet("font-family: 'Segoe UI'; font-size: 8pt; border: 1px solid; border-color: rgb(192,192,192);  border-radius: 3px;  color: white; font: bold;");
             else
                 ui->label_2->setStyleSheet("font-family: 'Segoe UI'; font-size: 8pt; border: 1px solid; border-color: rgb(46, 80, 200);  border-radius: 3px; background-color: rgb(0,81,80); color: white; font: bold;");
@@ -2343,7 +3323,7 @@ void MainWindow::WidgetsLocation(QSize windowSize)
         ui->label_2->move(curWidgetPos.x() * scaleFactor, timePos);
         curWidgetPos = ui->pushButton->pos();
         ui->pushButton->move(curWidgetPos.x() * scaleFactor, timePos + ui->label_2->height() + (9 * scaleFactor));
-        if(Bridge  && Mmove == 1){
+        if(Bridge && ((Mmove == 1 && server) || (Mmove == players[0]->getId() + 1 && client))){
             ui->pushButton_6->resize(QSize(81 * scaleFactor, 16 * scaleFactor));
             ui->pushButton_6->move(QPoint(ui->pushButton->pos().x(), ui->pushButton->pos().y() - (5 * scaleFactor)));
             ui->pushButton->move(QPoint(ui->pushButton->pos().x(), ui->pushButton->pos().y() + (14 * scaleFactor)));
@@ -2354,13 +3334,18 @@ void MainWindow::WidgetsLocation(QSize windowSize)
         ui->label_8->move(curWidgetPos.x() * scaleFactor, timePos);
 
         if(players.size() == 2){
-            curWidgetPos = ui->label_13->pos();
-            timePos = timePos - 5 - ui->label_13->height();
-            ui->label_13->move(curWidgetPos.x() * scaleFactor, timePos);
-
-            curWidgetPos = ui->label_12->pos();
-            ui->label_12->move(ui->label_13->pos().x() + ui->label_13->width() + (4 * scaleFactor), timePos);
-
+            if(players[1]->getDifficulty() == ""){
+                curWidgetPos = ui->label_12->pos();
+                timePos = timePos - 5 - ui->label_12->height();
+                ui->label_12->move(curWidgetPos.x() * scaleFactor, timePos);
+            }
+            else{
+                curWidgetPos = ui->label_13->pos();
+                timePos = timePos - 5 - ui->label_13->height();
+                ui->label_13->move(curWidgetPos.x() * scaleFactor, timePos);
+                curWidgetPos = ui->label_12->pos();
+                ui->label_12->move(ui->label_13->pos().x() + ui->label_13->width() + (4 * scaleFactor), timePos);
+            }
             curWidgetPos = ui->label_11->pos();
             ui->label_11->move(ui->label_12->pos().x() + ui->label_12->width() + (3 * scaleFactor), timePos);
         }
@@ -2380,7 +3365,7 @@ void MainWindow::WidgetsLocation(QSize windowSize)
         int timeInt = (10 * scaleFactor) + ui->verticalLayoutWidget->width();
         ui->label_2->move((((ui->horizontalLayoutWidget_4->pos().x() - timeInt) / 2) - (ui->label_2->width() / 2)) + timeInt, timePos);
         ui->pushButton->move(ui->label_2->pos().x(), timePos + ui->label_2->height() + (9 * scaleFactor));
-        if(Bridge && Mmove == 1){
+        if(Bridge && ((Mmove == 1 && server) || (Mmove == players[0]->getId() + 1 && client))){
             ui->pushButton_6->resize(QSize(81 * scaleFactor, 16 * scaleFactor));
             ui->pushButton_6->move(QPoint(ui->pushButton->pos().x(), ui->pushButton->pos().y() - (5 * scaleFactor)));
             ui->pushButton->move(QPoint(ui->pushButton->pos().x(), ui->pushButton->pos().y() + (14 * scaleFactor)));
@@ -2668,9 +3653,7 @@ void MainWindow::SaveWindowGeometry()
 void MainWindow::scaleForMany()
 {
     if(players.size() == 2){
-        if((ui->comboBox_2->currentIndex() == 1 && !ui->comboBox_2->isHidden()) ||
-            (ui->comboBox_5->currentIndex() == 1 && !ui->comboBox_5->isHidden()) ||
-            (ui->comboBox_7->currentIndex() == 1 && !ui->comboBox_7->isHidden())){
+        if(players[1]->getDifficulty().empty()){
             ui->label_12->move(12, 150);
             ui->label_11->move(48, 150);
             ui->label_13->hide();
@@ -2745,27 +3728,46 @@ void MainWindow::scaleForMany()
     }
 }
 
-void MainWindow::playerCreator()
+void MainWindow::playerCreator(int pcount, int id, QString p0name, QString p1name, QString p2name, QString p3name)
 {
-    clickedSound();
-
     std::vector<std::string> botNames = {"Adam", "David", "Alex", "Niko", "Kevin", "Andrew", "Luka", "Steven", "Ivan", "Leo","Robert",
                                          "Thomas", "John", "Colin", "Edward", "Frank", "Daniel", "Donald", "Bruce", "Tom", "Max", "Mark", "Oscar"};
 
     players.push_back(new Human(ui->lineEdit->text().toStdString(), this));
     players[0]->getLayout() = ui->horizontalLayoutWidget;
     players[0]->getLabel() = ui->label_5;
+    int next = 0;
+    if(client)
+        players[0]->setId(id);
 
-    if(playersCount == 2){
-        if((ui->comboBox_2->currentIndex() == 1 && !ui->comboBox_2->isHidden()) ||
-            (ui->comboBox_5->currentIndex() == 1 && !ui->comboBox_5->isHidden()) ||
-            (ui->comboBox_7->currentIndex() == 1 && !ui->comboBox_7->isHidden())){
-            players.push_back(new Human("Name", this));
+    if(pcount == 2){
+        if(ui->comboBox_2->currentIndex() == 1 && !ui->comboBox_2->isHidden()){
+            players.push_back(new Human(ui->label_17->text().toStdString(), this));
+            if(server)
+                server->setId(ui->label_17, players.size() - 1);
+            else
+                players[1]->setId(0);
+        }
+        else if(ui->comboBox_5->currentIndex() == 1 && !ui->comboBox_5->isHidden()){
+            players.push_back(new Human(ui->label_18->text().toStdString(), this));
+            if(server)
+                server->setId(ui->label_18, players.size() - 1);
+            else
+                players[1]->setId(0);
+        }
+        else if(ui->comboBox_7->currentIndex() == 1 && !ui->comboBox_7->isHidden()){
+            players.push_back(new Human(ui->label_19->text().toStdString(), this));
+            if(server)
+                server->setId(ui->label_19, players.size() - 1);
+            else
+                players[1]->setId(0);
         }
         else{
-            int randomNumber = std::rand() % (botNames.size() - 1);
-            players.push_back(new Bot("Bot " + botNames[randomNumber], this));
-            botNames.erase(botNames.begin() + randomNumber);
+            if(server){
+                int randomNumber = std::rand() % (botNames.size() - 1);
+                players.push_back(new Bot("Bot " + botNames[randomNumber], this));
+                botNames.erase(botNames.begin() + randomNumber);
+            }
 
             if(!ui->comboBox_3->isHidden()){
                 players[1]->setDifficulty(ui->comboBox_3->currentText().toStdString());
@@ -2781,78 +3783,204 @@ void MainWindow::playerCreator()
         players[1]->getLayout() = ui->horizontalLayoutWidget_2;
         players[1]->getLabel() = ui->label_6;
     }
-    else if(playersCount == 3){
+    else if(pcount == 3){
         if(ui->comboBox_5->isHidden()){
             if(ui->comboBox_2->currentIndex() == 0){
-                int randomNumber = std::rand() % (botNames.size() - 1);
-                players.push_back(new Bot("Bot " + botNames[randomNumber], this));
-                botNames.erase(botNames.begin() + randomNumber);
+                if(server){
+                    int randomNumber = std::rand() % (botNames.size() - 1);
+                    players.push_back(new Bot("Bot " + botNames[randomNumber], this));
+                    botNames.erase(botNames.begin() + randomNumber);
+                }
+                else{
+                    next = nextOne(id + 1, pcount);
+                    if(next - 1 == 0){
+                        players.push_back(new Bot(p0name.toStdString(), this));
+                    }
+                    else if(next - 1 == 1){
+                        players.push_back(new Bot(p1name.toStdString(), this));
+                    }
+                    else{
+                        players.push_back(new Bot(p2name.toStdString(), this));
+                    }
+                    players[1]->setId(next - 1);
+                }
                 players[1]->setDifficulty(ui->comboBox_3->currentText().toStdString());
             }
             else{
-                players.push_back(new Human("Name", this));
+                players.push_back(new Human(ui->label_17->text().toStdString(), this));
+                if(server)
+                    server->setId(ui->label_17, players.size() - 1);
+                else{
+                    next = nextOne(id + 1, pcount);
+                    players[1]->setId(next - 1);
+                }
             }
             players[1]->getLayout() = ui->horizontalLayoutWidget_2;
             players[1]->getLabel() = ui->label_6;
 
             if(ui->comboBox_7->currentIndex() == 0){
-                int randomNumber = std::rand() % (botNames.size() - 1);
-                players.push_back(new Bot("Bot " + botNames[randomNumber], this));
-                botNames.erase(botNames.begin() + randomNumber);
+                if(server){
+                    int randomNumber = std::rand() % (botNames.size() - 1);
+                    players.push_back(new Bot("Bot " + botNames[randomNumber], this));
+                    botNames.erase(botNames.begin() + randomNumber);
+                }
+                else{
+                    next = nextOne(next, pcount);
+                    if(next - 1 == 0){
+                        players.push_back(new Bot(p0name.toStdString(), this));
+                    }
+                    else if(next - 1 == 1){
+                        players.push_back(new Bot(p1name.toStdString(), this));
+                    }
+                    else{
+                        players.push_back(new Bot(p2name.toStdString(), this));
+                    }
+                    players[2]->setId(next - 1);
+                }
                 players[2]->setDifficulty(ui->comboBox_6->currentText().toStdString());
             }
             else{
-                players.push_back(new Human("Name", this));
+                players.push_back(new Human(ui->label_19->text().toStdString(), this));
+                if(server)
+                    server->setId(ui->label_19, players.size() - 1);
+                else{
+                    next = nextOne(next, pcount);
+                    players[2]->setId(next - 1);
+                }
             }
             players[2]->getLayout() = ui->verticalLayoutWidget_2;
             players[2]->getLabel() = ui->label_14;
         }
         else if(ui->comboBox_2->isHidden()){
             if(ui->comboBox_5->currentIndex() == 0){
-                int randomNumber = std::rand() % (botNames.size() - 1);
-                players.push_back(new Bot("Bot " + botNames[randomNumber], this));
-                botNames.erase(botNames.begin() + randomNumber);
+                if(server){
+                    int randomNumber = std::rand() % (botNames.size() - 1);
+                    players.push_back(new Bot("Bot " + botNames[randomNumber], this));
+                    botNames.erase(botNames.begin() + randomNumber);
+                }
+                else{
+                    next = nextOne(id + 1, pcount);
+                    if(next - 1 == 0){
+                        players.push_back(new Bot(p0name.toStdString(), this));
+                    }
+                    else if(next - 1 == 1){
+                        players.push_back(new Bot(p1name.toStdString(), this));
+                    }
+                    else{
+                        players.push_back(new Bot(p2name.toStdString(), this));
+                    }
+                    players[1]->setId(next - 1);
+                }
                 players[1]->setDifficulty(ui->comboBox_4->currentText().toStdString());
             }
             else{
-                players.push_back(new Human("Name", this));
+                players.push_back(new Human(ui->label_18->text().toStdString(), this));
+                if(server)
+                    server->setId(ui->label_18, players.size() - 1);
+                else{
+                    next = nextOne(id + 1, pcount);
+                    players[1]->setId(next - 1);
+                }
             }
             players[1]->getLayout() = ui->horizontalLayoutWidget_2;
             players[1]->getLabel() = ui->label_6;
 
             if(ui->comboBox_7->currentIndex() == 0){
-                int randomNumber = std::rand() % (botNames.size() - 1);
-                players.push_back(new Bot("Bot " + botNames[randomNumber], this));
-                botNames.erase(botNames.begin() + randomNumber);
+                if(server){
+                    int randomNumber = std::rand() % (botNames.size() - 1);
+                    players.push_back(new Bot("Bot " + botNames[randomNumber], this));
+                    botNames.erase(botNames.begin() + randomNumber);
+                }
+                else{
+                    next = nextOne(next, pcount);
+                    if(next - 1 == 0){
+                        players.push_back(new Bot(p0name.toStdString(), this));
+                    }
+                    else if(next - 1 == 1){
+                        players.push_back(new Bot(p1name.toStdString(), this));
+                    }
+                    else{
+                        players.push_back(new Bot(p2name.toStdString(), this));
+                    }
+                    players[2]->setId(next - 1);
+                }
                 players[2]->setDifficulty(ui->comboBox_6->currentText().toStdString());
             }
             else{
-                players.push_back(new Human("Name", this));
+                players.push_back(new Human(ui->label_19->text().toStdString(), this));
+                if(server)
+                    server->setId(ui->label_19, players.size() - 1);
+                else{
+                    next = nextOne(next, pcount);
+                    players[2]->setId(next - 1);
+                }
             }
             players[2]->getLayout() = ui->verticalLayoutWidget_2;
             players[2]->getLabel() = ui->label_14;
         }
         else{
             if(ui->comboBox_5->currentIndex() == 0){
-                int randomNumber = std::rand() % (botNames.size() - 1);
-                players.push_back(new Bot("Bot " + botNames[randomNumber], this));
-                botNames.erase(botNames.begin() + randomNumber);
+                if(server){
+                    int randomNumber = std::rand() % (botNames.size() - 1);
+                    players.push_back(new Bot("Bot " + botNames[randomNumber], this));
+                    botNames.erase(botNames.begin() + randomNumber);
+                }
+                else{
+                    next = nextOne(id + 1, pcount);
+                    if(next - 1 == 0){
+                        players.push_back(new Bot(p0name.toStdString(), this));
+                    }
+                    else if(next - 1 == 1){
+                        players.push_back(new Bot(p1name.toStdString(), this));
+                    }
+                    else{
+                        players.push_back(new Bot(p2name.toStdString(), this));
+                    }
+                    players[1]->setId(next - 1);
+                }
                 players[1]->setDifficulty(ui->comboBox_4->currentText().toStdString());
             }
             else{
-                players.push_back(new Human("Name", this));
+                players.push_back(new Human(ui->label_18->text().toStdString(), this));
+                if(server)
+                    server->setId(ui->label_18, players.size() - 1);
+                else{
+                    next = nextOne(id + 1, pcount);
+                    players[1]->setId(next - 1);
+                }
             }
             players[1]->getLayout() = ui->horizontalLayoutWidget_2;
             players[1]->getLabel() = ui->label_6;
 
             if(ui->comboBox_2->currentIndex() == 0){
-                int randomNumber = std::rand() % (botNames.size() - 1);
-                players.push_back(new Bot("Bot " + botNames[randomNumber], this));
-                botNames.erase(botNames.begin() + randomNumber);
+                if(server){
+                    int randomNumber = std::rand() % (botNames.size() - 1);
+                    players.push_back(new Bot("Bot " + botNames[randomNumber], this));
+                    botNames.erase(botNames.begin() + randomNumber);
+                }
+                else{
+                    next = nextOne(next, pcount);
+                    if(next - 1 == 0){
+                        players.push_back(new Bot(p0name.toStdString(), this));
+                    }
+                    else if(next - 1 == 1){
+                        players.push_back(new Bot(p1name.toStdString(), this));
+                    }
+                    else{
+                        players.push_back(new Bot(p2name.toStdString(), this));
+                    }
+                    players[2]->setId(next - 1);
+                }
                 players[2]->setDifficulty(ui->comboBox_3->currentText().toStdString());
             }
             else{
-                players.push_back(new Human("Name", this));
+                players.push_back(new Human(ui->label_17->text().toStdString(), this));
+                if(server)
+                    server->setId(ui->label_17, players.size() - 1);
+                else{
+                    next = nextOne(next, pcount);
+                    players[2]->setId(next - 1);
+                }
             }
             players[2]->getLayout() = ui->verticalLayoutWidget_2;
             players[2]->getLabel() = ui->label_14;
@@ -2860,37 +3988,109 @@ void MainWindow::playerCreator()
     }
     else{
         if(ui->comboBox_5->currentIndex() == 0){
-            int randomNumber = std::rand() % (botNames.size() - 1);
-            players.push_back(new Bot("Bot " + botNames[randomNumber], this));
-            botNames.erase(botNames.begin() + randomNumber);
+            if(server){
+                int randomNumber = std::rand() % (botNames.size() - 1);
+                players.push_back(new Bot("Bot " + botNames[randomNumber], this));
+                botNames.erase(botNames.begin() + randomNumber);
+            }
+            else{
+                next = nextOne(id + 1, pcount);
+                if(next - 1 == 0){
+                    players.push_back(new Bot(p0name.toStdString(), this));
+                }
+                else if(next - 1 == 1){
+                    players.push_back(new Bot(p1name.toStdString(), this));
+                }
+                else if(next - 1 == 2){
+                    players.push_back(new Bot(p2name.toStdString(), this));
+                }
+                else{
+                    players.push_back(new Bot(p3name.toStdString(), this));
+                }
+                players[1]->setId(next - 1);
+            }
             players[1]->setDifficulty(ui->comboBox_4->currentText().toStdString());
         }
         else{
-            players.push_back(new Human("Name", this));
+            players.push_back(new Human(ui->label_18->text().toStdString(), this));
+            if(server)
+                server->setId(ui->label_18, players.size() - 1);
+            else{
+                next = nextOne(id + 1, pcount);
+                players[1]->setId(next - 1);
+            }
         }
         players[1]->getLayout() = ui->verticalLayoutWidget;
         players[1]->getLabel() = ui->label_15;
 
         if(ui->comboBox_2->currentIndex() == 0){
-            int randomNumber = std::rand() % (botNames.size() - 1);
-            players.push_back(new Bot("Bot " + botNames[randomNumber], this));
-            botNames.erase(botNames.begin() + randomNumber);
+            if(server){
+                int randomNumber = std::rand() % (botNames.size() - 1);
+                players.push_back(new Bot("Bot " + botNames[randomNumber], this));
+                botNames.erase(botNames.begin() + randomNumber);
+            }
+            else{
+                next = nextOne(next, pcount);
+                if(next - 1 == 0){
+                    players.push_back(new Bot(p0name.toStdString(), this));
+                }
+                else if(next - 1 == 1){
+                    players.push_back(new Bot(p1name.toStdString(), this));
+                }
+                else if(next - 1 == 2){
+                    players.push_back(new Bot(p2name.toStdString(), this));
+                }
+                else{
+                    players.push_back(new Bot(p3name.toStdString(), this));
+                }
+                players[2]->setId(next - 1);
+            }
             players[2]->setDifficulty(ui->comboBox_3->currentText().toStdString());
         }
         else{
-            players.push_back(new Human("Name", this));
+            players.push_back(new Human(ui->label_17->text().toStdString(), this));
+            if(server)
+                server->setId(ui->label_17, players.size() - 1);
+            else{
+                next = nextOne(next, pcount);
+                players[2]->setId(next - 1);
+            }
         }
         players[2]->getLayout() = ui->horizontalLayoutWidget_2;
         players[2]->getLabel() = ui->label_6;
 
         if(ui->comboBox_7->currentIndex() == 0){
-            int randomNumber = std::rand() % (botNames.size() - 1);
-            players.push_back(new Bot("Bot " + botNames[randomNumber], this));
-            botNames.erase(botNames.begin() + randomNumber);
+            if(server){
+                int randomNumber = std::rand() % (botNames.size() - 1);
+                players.push_back(new Bot("Bot " + botNames[randomNumber], this));
+                botNames.erase(botNames.begin() + randomNumber);
+            }
+            else{
+                next = nextOne(next, pcount);
+                if(next - 1 == 0){
+                    players.push_back(new Bot(p0name.toStdString(), this));
+                }
+                else if(next - 1 == 1){
+                    players.push_back(new Bot(p1name.toStdString(), this));
+                }
+                else if(next - 1 == 2){
+                    players.push_back(new Bot(p2name.toStdString(), this));
+                }
+                else{
+                    players.push_back(new Bot(p3name.toStdString(), this));
+                }
+                players[3]->setId(next - 1);
+            }
             players[3]->setDifficulty(ui->comboBox_6->currentText().toStdString());
         }
         else{
-            players.push_back(new Human("Name", this));
+            players.push_back(new Human(ui->label_19->text().toStdString(), this));
+            if(server)
+                server->setId(ui->label_19, players.size() - 1);
+            else{
+                next = nextOne(next, pcount);
+                players[3]->setId(next - 1);
+            }
         }
         players[3]->getLayout() = ui->verticalLayoutWidget_2;
         players[3]->getLabel() = ui->label_14;
@@ -2987,7 +4187,7 @@ void MainWindow::endClicked(bool end) {
         players[Mmove - 1]->setPass(0);
         int next;
 
-        next = nextOne(Mmove);
+        next = nextOne(Mmove, players.size());
 
         std::string (&Cards)[36] = players[next - 1]->getCards();
         int CardsSize = players[next - 1]->getCardsSize();
@@ -3029,7 +4229,7 @@ void MainWindow::endClicked(bool end) {
             }
         }
 
-        next = nextOne(next);
+        next = nextOne(next, players.size());
 
         Mmove = next;
 
@@ -3043,9 +4243,9 @@ void MainWindow::endClicked(bool end) {
     }
     else if(tableCards[tableCardsSize - 1][0] == 'A' && players[Mmove - 1]->getPass() > 0){
         int next;
-        next = nextOne(Mmove);
+        next = nextOne(Mmove, players.size());
         for(int i = 0; i < players[Mmove - 1]->getPass() + tempEndValue; i++){
-            next = nextOne(next);
+            next = nextOne(next, players.size());
         }
         players[Mmove - 1]->setPass(0);
         Mmove = next;
@@ -3055,10 +4255,10 @@ void MainWindow::endClicked(bool end) {
 
         for(int i = 0; i < players[Mmove - 1]->getPass() + tempEndValue; i++){
             if(i == 0){
-                next = nextOne(Mmove);
+                next = nextOne(Mmove, players.size());
             }
             else{
-                next = nextOne(next);
+                next = nextOne(next, players.size());
             }
             std::string (&Cards)[36] = players[next - 1]->getCards();
             int CardsSize = players[next - 1]->getCardsSize();
@@ -3115,14 +4315,14 @@ void MainWindow::endClicked(bool end) {
                 ui->label_4->show();
             }
         }
-        next = nextOne(next);
+        next = nextOne(next, players.size());
         players[Mmove - 1]->setPass(0);
         Mmove = next;
     }
     else{
         players[Mmove - 1]->setPass(0);
         players[Mmove - 1]->setJackKol(0);
-        Mmove = nextOne(Mmove);
+        Mmove = nextOne(Mmove, players.size());
     }
 
     if(!end){
@@ -3152,134 +4352,85 @@ void MainWindow::on_pushButton_clicked()
 {
     clickedSound();
 
-    endClicked();
+    if(server){
+        endClicked();
 
-    if(Bridge){
-        Bridge = false;
-        pushButtonBridge();
+        if(Bridge){
+            Bridge = false;
+            pushButtonBridge();
+        }
+
+        AutoSave();
+        server->GameChanged();
+    }
+    else{
+        client->endPressed();
     }
 }
 
 void MainWindow::on_pushButton_2_clicked()
 {
     clickedSound();
-    if(Bridge){
-        Bridge = false;
-        pushButtonBridge();
-    }
-    Jackchoose = "c";
-    ui->pushButton_2->hide();
-    ui->pushButton_3->hide();
-    ui->pushButton_4->hide();
-    ui->pushButton_5->hide();
-    Mmove = nextOne(1);
-    ui->label_2->setText(QString::fromStdString(players[Mmove - 1]->getName()) + "\nturn");
-    ui->label_2->setStyleSheet("font-family: 'Segoe UI'; font-size: 8pt; border: 1px solid; border-color: rgb(192,192,192);  border-radius: 3px;  color: white; font: bold;");
-    if(isFullscreen && isInGame){
-        QString cs = ui->label_2->styleSheet();
-        ui->label_2->setStyleSheet(cs + QString(" font-size: %1pt; border-radius: %2px;").arg(8 * scaleFactor).arg(3 * scaleFactor));
-    }
-    secMove = 0;
-    ui->label_3->setStyleSheet("border-image: url(:/img/PNG-cards-1.3/chirva.png);");
-    ui->label_3->show();
-    players[0]->setJackKol(0);
+    if(server)
+        suitChoose("c", "border-image: url(:/img/PNG-cards-1.3/chirva.png);");
+    else
+        client->suitPressed("c");
 }
 
 void MainWindow::on_pushButton_3_clicked()
 {
     clickedSound();
-    if(Bridge){
-        Bridge = false;
-        pushButtonBridge();
-    }
-    Jackchoose = "k";
-    ui->pushButton_2->hide();
-    ui->pushButton_3->hide();
-    ui->pushButton_4->hide();
-    ui->pushButton_5->hide();
-    Mmove = nextOne(1);
-    ui->label_2->setText(QString::fromStdString(players[Mmove - 1]->getName()) + "\nturn");
-    ui->label_2->setStyleSheet("font-family: 'Segoe UI'; font-size: 8pt; border: 1px solid; border-color: rgb(192,192,192);  border-radius: 3px;  color: white; font: bold;");
-    if(isFullscreen && isInGame){
-        QString cs = ui->label_2->styleSheet();
-        ui->label_2->setStyleSheet(cs + QString(" font-size: %1pt; border-radius: %2px;").arg(8 * scaleFactor).arg(3 * scaleFactor));
-    }
-    secMove = 0;
-    ui->label_3->setStyleSheet("border-image: url(:/img/PNG-cards-1.3/kresti.png);");
-    ui->label_3->show();
-    players[0]->setJackKol(0);
+    if(server)
+        suitChoose("k", "border-image: url(:/img/PNG-cards-1.3/kresti.png);");
+    else
+        client->suitPressed("k");
 }
 
 void MainWindow::on_pushButton_4_clicked()
 {
     clickedSound();
-    if(Bridge){
-        Bridge = false;
-        pushButtonBridge();
-    }
-    Jackchoose = "b";
-    ui->pushButton_2->hide();
-    ui->pushButton_3->hide();
-    ui->pushButton_4->hide();
-    ui->pushButton_5->hide();
-    Mmove = nextOne(1);
-    ui->label_2->setText(QString::fromStdString(players[Mmove - 1]->getName()) + "\nturn");
-    ui->label_2->setStyleSheet("font-family: 'Segoe UI'; font-size: 8pt; border: 1px solid; border-color: rgb(192,192,192);  border-radius: 3px;  color: white; font: bold;");
-    if(isFullscreen && isInGame){
-        QString cs = ui->label_2->styleSheet();
-        ui->label_2->setStyleSheet(cs + QString(" font-size: %1pt; border-radius: %2px;").arg(8 * scaleFactor).arg(3 * scaleFactor));
-    }
-    secMove = 0;
-    ui->label_3->setStyleSheet("border-image: url(:/img/PNG-cards-1.3/bybna.png);");
-    ui->label_3->show();
-    players[0]->setJackKol(0);
+    if(server)
+        suitChoose("b", "border-image: url(:/img/PNG-cards-1.3/bybna.png);");
+    else
+        client->suitPressed("b");
 }
 
 void MainWindow::on_pushButton_5_clicked()
 {
     clickedSound();
-    if(Bridge){
-        Bridge = false;
-        pushButtonBridge();
-    }
-    Jackchoose = "p";
-    ui->pushButton_2->hide();
-    ui->pushButton_3->hide();
-    ui->pushButton_4->hide();
-    ui->pushButton_5->hide();
-    Mmove = nextOne(1);
-    ui->label_2->setText(QString::fromStdString(players[Mmove - 1]->getName()) + "\nturn");
-    ui->label_2->setStyleSheet("font-family: 'Segoe UI'; font-size: 8pt; border: 1px solid; border-color: rgb(192,192,192);  border-radius: 3px;  color: white; font: bold;");
-    if(isFullscreen && isInGame){
-        QString cs = ui->label_2->styleSheet();
-        ui->label_2->setStyleSheet(cs + QString(" font-size: %1pt; border-radius: %2px;").arg(8 * scaleFactor).arg(3 * scaleFactor));
-    }
-    secMove = 0;
-    ui->label_3->setStyleSheet("border-image: url(:/img/PNG-cards-1.3/piki.png);");
-    ui->label_3->show();
-    players[0]->setJackKol(0);
+    if(server)
+        suitChoose("p", "border-image: url(:/img/PNG-cards-1.3/piki.png);");
+    else
+        client->suitPressed("p");
 }
 
 void MainWindow::on_pushButton_8_clicked()
 {
     clickedSound();
-    QMessageBox YesNomsgBox(this);
-    YesNomsgBox.setWindowTitle("Quit");
-    YesNomsgBox.setText("Are you sure?");
-    YesNomsgBox.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
-    YesNomsgBox.setDefaultButton(QMessageBox::No);
-    YesNomsgBox.setStyleSheet(massBoxStyle);
+    QMessageBox* YesNomsgBox = new QMessageBox(this);
+    YesNomsgBox->setWindowTitle("Quit");
+    YesNomsgBox->setText("Are you sure?");
+    YesNomsgBox->setStandardButtons(QMessageBox::Yes | QMessageBox::No);
+    YesNomsgBox->setDefaultButton(QMessageBox::No);
+    YesNomsgBox->setStyleSheet(massBoxStyle);
 
-    foreach (QPushButton *button, YesNomsgBox.findChildren<QPushButton*>()) {
+    foreach (QPushButton *button, YesNomsgBox->findChildren<QPushButton*>()) {
         button->setCursor(Qt::PointingHandCursor);
     }
 
-    int reply = YesNomsgBox.exec();
-    clickedSound();
+    YesNomsgBox->setModal(true);
 
-    if (reply == QMessageBox::Yes) {
-        QApplication::quit();
-    }
+    connect(YesNomsgBox, &QMessageBox::finished, this, [=](int result){
+        if (result == QMessageBox::Yes) {
+            clickedSound();
+            QApplication::quit();
+        }
+        else if(result == QMessageBox::No)
+            clickedSound();
+        YesNomsgBox->deleteLater();
+    });
+
+    YesNomsgBox->open();
 }
 
 void MainWindow::on_pushButton_7_clicked()
@@ -3363,111 +4514,32 @@ void MainWindow::Displayslot(bool val)
 void MainWindow::on_pushButton_10_clicked()
 {   
     clickedSound();
-    if(server){
-        delete server;
-        server = nullptr;
-    }
 
-    QMessageBox YesNomsgBox(this);
-    YesNomsgBox.setWindowTitle("Quit");
-    YesNomsgBox.setText("Are you sure?");
-    YesNomsgBox.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
-    YesNomsgBox.setDefaultButton(QMessageBox::No);
-    YesNomsgBox.setStyleSheet(massBoxStyle);
+    QMessageBox* YesNomsgBox = new QMessageBox(this);
+    YesNomsgBox->setWindowTitle("Quit");
+    YesNomsgBox->setText("Are you sure?");
+    YesNomsgBox->setStandardButtons(QMessageBox::Yes | QMessageBox::No);
+    YesNomsgBox->setDefaultButton(QMessageBox::No);
+    YesNomsgBox->setStyleSheet(massBoxStyle);
 
-    foreach (QPushButton *button, YesNomsgBox.findChildren<QPushButton*>()) {
+    foreach (QPushButton *button, YesNomsgBox->findChildren<QPushButton*>()) {
         button->setCursor(Qt::PointingHandCursor);
     }
 
-    int reply = YesNomsgBox.exec();
-    clickedSound();
+    YesNomsgBox->setModal(true);
 
-    if (reply == QMessageBox::Yes) {
-        isInGame = false;
-        if(Bridge){
-            Bridge = false;
-            if(Mmove == 1)
-                pushButtonBridge();
+    connect(YesNomsgBox, &QMessageBox::finished, this, [=](int result){
+        if (result == QMessageBox::Yes) {
+            clickedSound();
+
+            leaveGame();
         }
+        else if(result == QMessageBox::No)
+            clickedSound();
+        YesNomsgBox->deleteLater();
+    });
 
-        for (Player* playe : players) {
-            delete playe;
-        }
-        players.clear();
-
-        if(ColodCardsSize == 0){
-            delete ColodButtons[0];
-            ColodButtons[0] = nullptr;
-        }
-        for(int i = 0; i < ColodCardsSize; i++){
-            delete ColodButtons[i];
-            ColodButtons[i] = nullptr;
-            ColodCards[i] = "";
-        }
-        for(int i = 0; i < tableCardsSize; i++){
-            delete TableButtons[i];
-            TableButtons[i] = nullptr;
-            tableCards[i] = "";
-        }
-
-        ColodCardsSize = 0;
-        tableCardsSize = 0;
-
-        isShuffl = false;
-        PointsX = 1;
-        ui->label->setVisible(false);
-        ui->label_2->setVisible(false);
-
-        ui->pushButton->hide();
-        ui->pushButton_6->hide();
-        ui->pushButton_2->hide();
-        ui->pushButton_3->hide();
-        ui->pushButton_4->hide();
-        ui->pushButton_5->hide();
-        ui->pushButton_10->hide();
-        ui->pushButton_11->hide();
-        ui->pushButton_14->hide();
-        speedUp = false;
-        ui->pushButton_14->setStyleSheet("font-family: 'Segoe UI'; font-size: 8pt; border: 1px solid; border-color: rgb(192,192,192); border-radius: 10px; background-color: rgb(230,230,230); color: black; font: bold;");
-        ui->label_3->hide();
-        ui->label_4->hide();
-        ui->label_5->hide();
-        ui->label_14->hide();
-        ui->label_15->hide();
-        ui->label_6->hide();
-        ui->label_7->hide();
-        ui->label_8->hide();
-        ui->label_11->hide();
-        ui->label_12->hide();
-        ui->label_13->hide();
-        ui->label_14->hide();
-        ui->label_15->hide();
-        ui->scrollArea->hide();
-        ui->label_7->setText(QString::fromStdString("Points " + std::to_string(PointsX) + "x"));
-
-        delete timer;
-        ui->pushButton_12->show();
-        ui->pushButton_13->show();
-        ui->pushButton_7->show();
-        ui->pushButton_8->show();
-        ui->label_11->hide();
-        ui->label_12->hide();
-        ui->label_13->hide();
-        ui->scrollArea->hide();
-        ui->label_9->show();
-        ui->label_10->show();
-        ui->label_16->show();
-        ui->line->show();
-        ui->line_2->show();
-
-        player->stop();
-        player->setSource(QUrl::fromLocalFile(tempFilePathMenu));
-        audioOutput->setVolume((musicvol / 100.0) * 0.1);
-        player->setLoops(-1);
-        player->play();
-
-        Resizing();
-    }
+    YesNomsgBox->open();
 }
 
 void MainWindow::on_pushButton_11_clicked()
@@ -3820,6 +4892,7 @@ void MainWindow::on_pushButton_17_clicked()
 
 void MainWindow::on_pushButton_18_clicked()
 {
+    clickedSound();
     std::ofstream fout;
     fout.open(dirName.toStdString());
 
@@ -3828,17 +4901,10 @@ void MainWindow::on_pushButton_18_clicked()
     }
     fout.close();
 
+    Jackchoose = "";
     ui->label_13->show();
-    playerCreator();
+    playerCreator(playersCount);
     scaleForMany();
-
-    ui->pushButton->hide();
-    ui->pushButton_2->hide();
-    ui->pushButton_3->hide();
-    ui->pushButton_4->hide();
-    ui->pushButton_5->hide();
-    ui->label_3->hide();
-    ui->label_4->hide();
 
     if(ui->pushButton_20->text() != "Unload"){
         ColodCardsSize = 0;
@@ -3940,7 +5006,8 @@ void MainWindow::on_pushButton_18_clicked()
                 fin.ignore();
 
                 std::getline(fin, bucket);
-                playe->setName(bucket);
+                if(dynamic_cast<Bot*>(playe))
+                    playe->setName(bucket);
 
                 fin >> bucketInt;
                 for(int i = 0; i < bucketInt; i++){
@@ -4131,6 +5198,8 @@ void MainWindow::on_pushButton_18_clicked()
     else if(Bridge && Mmove == 1){
         pushButtonBridge();
     }
+
+    server->GameChanged();
 }
 
 void MainWindow::on_pushButton_20_clicked()
@@ -4142,6 +5211,8 @@ void MainWindow::on_pushButton_20_clicked()
     ui->label_19->setText("");
 
     QString curText = ui->pushButton_20->text();
+
+    int slotscounter = 0;
 
     if(curText == "Load"){
         ui->comboBox_2->blockSignals(true);
@@ -4164,34 +5235,34 @@ void MainWindow::on_pushButton_20_clicked()
             QIcon ic4(":/img/PNG-cards-1.3/cross.png");
             ui->pushButton_15->setIcon(ic4);
             ui->pushButton_15->move(257, 30);
-            ui->pushButton_24->hide();
             ui->comboBox_2->setCurrentIndex(0);
             ui->comboBox_2->show();
             ui->comboBox_3->show();
-            ui->comboBox_2->setDisabled(true);
-            ui->comboBox_3->setDisabled(true);
+            ui->pushButton_24->hide();
+            ui->comboBox_2->setDisabled(false);
+            ui->comboBox_3->setDisabled(false);
             ui->pushButton_15->setStyleSheet("font-family: 'Segoe UI'; font-size: 13pt; border: 1px solid; border-color: rgb(192,192,192); border-radius: 10px; color: white; font: bold;");
             ui->pushButton_15->setDisabled(true);
 
             ui->pushButton_16->setIcon(ic4);
             ui->pushButton_16->move(37, 190);
-            ui->pushButton_25->hide();
             ui->comboBox_5->setCurrentIndex(0);
             ui->comboBox_5->show();
             ui->comboBox_4->show();
-            ui->comboBox_5->setDisabled(true);
-            ui->comboBox_4->setDisabled(true);
+            ui->pushButton_25->hide();
+            ui->comboBox_5->setDisabled(false);
+            ui->comboBox_4->setDisabled(false);
             ui->pushButton_16->setStyleSheet("font-family: 'Segoe UI'; font-size: 13pt; border: 1px solid; border-color: rgb(192,192,192); border-radius: 10px; color: white; font: bold;");
             ui->pushButton_16->setDisabled(true);
 
             ui->pushButton_17->setIcon(ic4);
             ui->pushButton_17->move(477, 190);
-            ui->pushButton_26->hide();
             ui->comboBox_7->setCurrentIndex(0);
             ui->comboBox_7->show();
             ui->comboBox_6->show();
-            ui->comboBox_7->setDisabled(true);
-            ui->comboBox_6->setDisabled(true);
+            ui->pushButton_26->hide();
+            ui->comboBox_7->setDisabled(false);
+            ui->comboBox_6->setDisabled(false);
             ui->pushButton_17->setStyleSheet("font-family: 'Segoe UI'; font-size: 13pt; border: 1px solid; border-color: rgb(192,192,192); border-radius: 10px; color: white; font: bold;");
             ui->pushButton_17->setDisabled(true);
 
@@ -4210,6 +5281,7 @@ void MainWindow::on_pushButton_20_clicked()
                 else{
                     ui->comboBox_5->setCurrentIndex(1);
                     ui->comboBox_4->hide();
+                    slotscounter++;
                 }
 
                 fin >> getstr;
@@ -4222,6 +5294,7 @@ void MainWindow::on_pushButton_20_clicked()
                 else{
                     ui->comboBox_2->setCurrentIndex(1);
                     ui->comboBox_3->hide();
+                    slotscounter++;
                 }
 
                 fin >> getstr;
@@ -4234,6 +5307,7 @@ void MainWindow::on_pushButton_20_clicked()
                 else{
                     ui->comboBox_7->setCurrentIndex(1);
                     ui->comboBox_6->hide();
+                    slotscounter++;
                 }
             }
             else if(getstr == "3"){
@@ -4241,6 +5315,7 @@ void MainWindow::on_pushButton_20_clicked()
                 ui->pushButton_16->setIcon(ic3);
                 ui->comboBox_5->hide();
                 ui->comboBox_4->hide();
+                ui->pushButton_25->hide();
 
                 fin >> getstr;
 
@@ -4254,6 +5329,7 @@ void MainWindow::on_pushButton_20_clicked()
                 else{
                     ui->comboBox_2->setCurrentIndex(1);
                     ui->comboBox_3->hide();
+                    slotscounter++;
                 }
 
                 fin >> getstr;
@@ -4266,9 +5342,10 @@ void MainWindow::on_pushButton_20_clicked()
                 else{
                     ui->comboBox_7->setCurrentIndex(1);
                     ui->comboBox_6->hide();
+                    slotscounter++;
                 }
             }
-            else {
+            else{
                 ui->pushButton_16->setIcon(ic3);
                 ui->pushButton_16->move(90, 190);
                 ui->pushButton_17->setIcon(ic3);
@@ -4277,6 +5354,8 @@ void MainWindow::on_pushButton_20_clicked()
                 ui->comboBox_4->hide();
                 ui->comboBox_7->hide();
                 ui->comboBox_6->hide();
+                ui->pushButton_25->hide();
+                ui->pushButton_26->hide();
 
                 fin >> getstr;
 
@@ -4290,6 +5369,7 @@ void MainWindow::on_pushButton_20_clicked()
                 else{
                     ui->comboBox_2->setCurrentIndex(1);
                     ui->comboBox_3->hide();
+                    slotscounter++;
                 }
             }
 
@@ -4302,8 +5382,14 @@ void MainWindow::on_pushButton_20_clicked()
         }
         fin.close();
 
-        ui->pushButton_18->setStyleSheet("font-family: 'Segoe UI'; font-size: 13pt; border: 2px solid; border-color: black; border-radius: 20px; background-color: white; color: black; font: bold;");
-        ui->pushButton_18->setDisabled(false);
+        if(slotscounter == 0){
+            ui->pushButton_18->setStyleSheet("font-family: 'Segoe UI'; font-size: 13pt; border: 2px solid; border-color: black; border-radius: 20px; background-color: white; color: black; font: bold;");
+            ui->pushButton_18->setDisabled(false);
+        }
+        else{
+            ui->pushButton_18->setStyleSheet("font-family: 'Segoe UI'; font-size: 13pt; border: 1px solid; border-color: rgb(192,192,192); border-radius: 20px; color: white; font: bold;");
+            ui->pushButton_18->setDisabled(true);
+        }
 
         curText = "Unload";
 
@@ -4373,6 +5459,8 @@ void MainWindow::on_pushButton_20_clicked()
         fin.close();
     }
 
+    server->setSlotsCounter(slotscounter);
+
     ui->pushButton_20->setText(curText);
 }
 
@@ -4394,9 +5482,14 @@ void MainWindow::on_pushButton_6_clicked()
 {
     clickedSound();
 
-    players[0]->setJackKol(0);
+    if(server){
+        players[0]->setJackKol(0);
 
-    gameEnd();
+        gameEnd();
+    }
+    else{
+        client->bridgePressed();
+    }
 }
 
 void MainWindow::on_pushButton_14_clicked()
@@ -4787,6 +5880,11 @@ void MainWindow::on_lineEdit_3_textEdited(const QString &arg1)
 void MainWindow::on_pushButton_28_clicked()
 {
     clickedSound();
+
+    if(client){
+        delete client;
+        client = nullptr;
+    }
 
     client = new GameClient();
 

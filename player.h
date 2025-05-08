@@ -21,8 +21,9 @@ protected:
     int jackKol;
     int passCount;
     bool inGame;
+    int id;
 public:
-    explicit Player(std::string name, MainWindow* mw) : name(name), mainWindow(mw), cardsSize(0), checkForTake(false), points(0), jackKol(0), passCount(0), inGame(true) {}
+    explicit Player(std::string name, MainWindow* mw) : name(name), mainWindow(mw), cardsSize(0), checkForTake(false), points(0), jackKol(0), passCount(0), inGame(true), id(0) {}
 
     virtual ~Player() {
         for (int i = 0; i < cardsSize; i++) {
@@ -47,6 +48,8 @@ public:
     virtual std::string getDifficulty() { return ""; }
 
     virtual void setDifficulty(std::string param) {}
+
+    virtual void parseCard(std::string card) {}
 
     void setInGame(bool param) { inGame = param; }
 
@@ -77,6 +80,12 @@ public:
     int getJackKol() { return jackKol; }
 
     void setJackKol(int param) { jackKol = param; }
+
+    int getId() { return id; }
+
+    void setId(int param) { id = param; }
+
+    MainWindow* getMainWindow() const { return mainWindow; }
 
     QWidget* &getLayout() {
         return layoutWidget;

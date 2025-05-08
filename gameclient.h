@@ -17,7 +17,19 @@ public:
     void sendMessage(const QString &message);
     void setName(QString &param) { name = param; }
     void setMain(MainWindow* param) { mainWindow = param; }
-    void swapPressed(QString button);
+    void swapPressed(const QString &button);
+    void cardPressed(const QString &card);
+    void colodPressed();
+    void endPressed();
+    void bridgePressed();
+    void suitPressed(QString suit);
+    bool isConnected()
+    {
+        if (socket->state() == QAbstractSocket::ConnectedState) {
+            return true;
+        }
+        return false;
+    }
 
 private slots:
     void onConnected();

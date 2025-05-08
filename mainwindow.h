@@ -119,7 +119,7 @@ public:
 
     void lable3Style(QString param);
 
-    void RemoveWidgetBot(int id) {
+    void RemoveWidgetBot() {
         onRemoveWidgetColodBot();
     }
 
@@ -135,11 +135,11 @@ public:
 
     int getPlayercardsSize() const;
 
-    void playerCreator();
+    void playerCreator(int pcount, int id = 0, QString p0name = "", QString p1name = "", QString p2name = "", QString p3name = "");
 
     void endClicked(bool end = false);
 
-    int nextOne(int);
+    int nextOne(int, int);
 
     int getPlayersCount() const { return playersCount; }
 
@@ -147,17 +147,35 @@ public:
 
     QLabel* getLabel();
 
-    void ClientDisconnected(QLabel*);
+    void ClientDisconnected(QLabel*, int);
 
     void connectionError(const QString&);
 
-    void fromHostMessage(const QString&);
+    void fromHostMessage(const QString&, const QString&);
 
     QJsonObject hubJson(QLabel*);
+
+    QJsonObject gameJson(int);
+
+    void gameJsonHelper(QJsonObject&, int);
 
     void parseHub(const QJsonObject&);
 
     void parseSwap(QLabel*, QString&);
+
+    void parseGame(const QJsonObject&);
+
+    void parseCard(int, const std::string&);
+
+    void uiStartFromHub();
+
+    void gameChange();
+
+    void parseBridge(int index);
+
+    void parseSuit(int index, QString suit);
+
+    QString endMessage(int index, int id);
 
 private slots:
 
@@ -397,6 +415,12 @@ private:
 
     void hubParseHelper(QPushButton *bigButton, QPoint firstCords, QPoint secondCords, int jsonBig, QPushButton *swap, QComboBox *upper,
                         QComboBox *lower, QLabel *label, int jsonUpper, int jsonLower, const QString &jsonLabel);
+
+    void suitChoose(std::string, QString);
+
+    void replaceHumanFor2();
+
+    void leaveGame();
 
 signals:
     void QSMsignal2(bool, bool, std::string, int, int, bool);

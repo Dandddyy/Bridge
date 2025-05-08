@@ -21,6 +21,11 @@ public:
     void kickClient(QLabel*);
     void swapClients(QLabel*, QLabel*);
     void HubChanged();
+    void GameChanged();
+    void setId(QLabel*, int);
+    void sendEndMessage(int index);
+    void sendSetMessage(int index, const QString &massage);
+    void setProcessingPaused(bool param) { processingPaused = param; }
 
 private slots:
     void onNewConnection();
@@ -30,9 +35,10 @@ private slots:
 private:
     MainWindow* mainWindow;
     QTcpServer *server;
-    QVector<std::pair<QTcpSocket*, QLabel*>> clients;
+    QVector<std::pair<QTcpSocket*, std::pair<QLabel*, int>>> clients;
     int slotsCounter = 0;
     bool gameStarted = false;
+    bool processingPaused = false;
 };
 
 #endif // GAMESERVER_H

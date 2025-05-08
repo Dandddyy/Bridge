@@ -33,9 +33,34 @@ void GameClient::sendMessage(const QString &message)
     }
 }
 
-void GameClient::swapPressed(QString button)
+void GameClient::swapPressed(const QString &button)
 {
     sendMessage("SWAP:" + button);
+}
+
+void GameClient::cardPressed(const QString &card)
+{
+    sendMessage("CARD:" + card);
+}
+
+void GameClient::colodPressed()
+{
+    sendMessage("COLOD: ");
+}
+
+void GameClient::endPressed()
+{
+    sendMessage("END: ");
+}
+
+void GameClient::bridgePressed()
+{
+    sendMessage("BRIDGE: ");
+}
+
+void GameClient::suitPressed(QString suit)
+{
+    sendMessage("SUIT:" + suit);
 }
 
 void GameClient::onConnected()
@@ -58,7 +83,7 @@ void GameClient::onReadyRead()
         qDebug() << "Received line:" << msg;
 
         if (msg == "No free slots." || msg == "You were kicked out.") {
-            mainWindow->fromHostMessage(msg);
+            mainWindow->fromHostMessage(msg, "Message");
             socket->disconnectFromHost();
         }
         else if (msg.startsWith("HUB:")) {
@@ -73,6 +98,27 @@ void GameClient::onReadyRead()
             }
 
             mainWindow->parseHub(doc.object());
+        }
+        else if(msg.startsWith("GAME:")){
+            QString jsonString = msg.mid(QString("GAME:").length());
+
+            QJsonParseError error;
+            QJsonDocument doc = QJsonDocument::fromJson(jsonString.toUtf8(), &error);
+
+            if (error.error != QJsonParseError::NoError) {
+                qDebug() << "Error parsing JSON:" << error.errorString();
+                return;
+            }
+
+            mainWindow->parseGame(doc.object());
+        }
+        else if(msg.startsWith("GAMEOVER:")){
+            QString message = msg.mid(QString("GAMEOVER:").length()).replace("|n|", "\n");
+            mainWindow->fromHostMessage(message, "Game over");
+        }
+        else if(msg.startsWith("SET:")){
+            QString message = msg.mid(QString("SET:").length()).replace("|n|", "\n");
+            mainWindow->fromHostMessage(message, "Set");
         }
     }
 }

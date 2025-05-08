@@ -1,4 +1,5 @@
 #include "bot.h"
+#include <QtConcurrent>
 
 void Bot::botMove() {
 
@@ -277,7 +278,7 @@ void Bot::botMove() {
             mainWindow->hideLable3();
         }
         else if(checkForTake == 0){
-            mainWindow->RemoveWidgetBot(0);
+            mainWindow->RemoveWidgetBot();
             if(table[tableSize - 1][0] == '6'){
                 checkForTake = 0;
             }
@@ -383,12 +384,12 @@ void Bot::botMove() {
         }
         if(newtable[newtableSize - 1][0] != '6'){
             checkForEnd = true;
-            mainWindow->AutoSave();
             mainWindow->gameEnd();
         }
     }
     if(!checkForEnd){
         mainWindow->AutoSave();
+        mainWindow->gameChange();
     }
 }
 
@@ -433,8 +434,6 @@ int Bot::minimax(const GameState& state) {
 
 void Bot::chooseBestMove() {
 
-    bool checkForEnd = false;
-
     const std::string* table = mainWindow->getTable();
     const int tableSize = mainWindow->getTableSize();
 
@@ -442,155 +441,166 @@ void Bot::chooseBestMove() {
     int count = std::min(tableSize, 4);
     std::vector<std::string> vectorTable(table + (tableSize - count), table + tableSize);
 
-
-    GameState state = GameState(mainWindow->isMove(), mainWindow->isQSM(), mainWindow->isBridge(), mainWindow->isPoints(), mainWindow->getPointsX(),
-                                points, mainWindow->isSecMove(), vectorBot, mainWindow->getPlayercardsSize(),vectorTable,mainWindow->getJackchoose(),
-                                0, 0, mainWindow->getPlayercardsSize(),mainWindow->getPlayersCount(), passCount, jackKol);
+    GameState state = GameState(
+        mainWindow->isMove(), mainWindow->isQSM(), mainWindow->isBridge(), mainWindow->isPoints(), mainWindow->getPointsX(),
+        points, mainWindow->isSecMove(), vectorBot, mainWindow->getPlayercardsSize(), vectorTable,
+        mainWindow->getJackchoose(), 0, 0, mainWindow->getPlayercardsSize(), mainWindow->getPlayersCount(), passCount, jackKol
+        );
 
     std::vector<std::string> possibleMoves = state.getPossibleMoves();
-    std::string bestMove = "";
-    int bestValue = INT_MIN;
 
-    if(possibleMoves.empty() && checkForTake == 0){
-        mainWindow->RemoveWidgetBot(0);
-        if(table[tableSize - 1][0] == '6'){
+    if (possibleMoves.empty() && checkForTake == 0) {
+        mainWindow->RemoveWidgetBot();
+        if (table[tableSize - 1][0] == '6') {
             checkForTake = 0;
         }
-    }
-    else if(possibleMoves.empty()){
+        mainWindow->AutoSave();
+        mainWindow->gameChange();
+        return;
+    } else if (possibleMoves.empty()) {
         mainWindow->botNoChoice();
         checkForTake = 0;
         jackKol = 0;
+        mainWindow->AutoSave();
+        mainWindow->gameChange();
+        return;
     }
-    else{
-        int mv;
-        int it = 0;
+
+    QFuture<void> future = QtConcurrent::run([=]() mutable {
+        std::string bestMove = "";
+        int bestValue = INT_MIN;
 
         for (std::string moveS : possibleMoves) {
-            qDebug() << "moveS: " << moveS <<"\n";
-            qDebug() << "cards: ";
-            for (int i = 0; i < cardsSize; i++){
-                qDebug() << cards[i] << " ";
-            }
-            GameState newState = state;
-            newState = newState.simulateMove(moveS);
+            GameState newState = state.simulateMove(moveS);
             int moveValue = minimax(newState);
-            qDebug() << "possibleMoves.size: " << possibleMoves.size() << ", moveVal:" << moveValue << "\n";
             if (moveValue > bestValue) {
                 bestValue = moveValue;
                 bestMove = moveS;
             }
         }
 
-        if(bestMove != "click_end" && bestMove != "bridge" && bestMove != "take"){
+        QMetaObject::invokeMethod(mainWindow, [=]() {
+                applyBestMove(bestMove);
+            }, Qt::QueuedConnection);
+    });
+}
+
+void Bot::applyBestMove(const std::string& bestMove) {
+    bool checkForEnd = false;
+    int mv;
+    int it = 0;
+    const std::string* table = mainWindow->getTable();
+    const int tableSize = mainWindow->getTableSize();
+
+    if(bestMove != "click_end" && bestMove != "bridge" && bestMove != "take"){
+        for(int i = 0; i < cardsSize; i++){
+            if(bestMove == cards[i]){
+                it = i;
+                qDebug() << "it: " << it << ", i:" << i << "\n";
+            }
+        }
+
+        qDebug() << "----------------------------------\n";
+
+        mainWindow->cardSound();
+
+        if(bestMove[0] == 'J'){
+            jackKol++;
+
+            int sign[4];
+            sign[0] = 0;
+            sign[1] = 0;
+            sign[2] = 0;
+            sign[3] = 0;
+
             for(int i = 0; i < cardsSize; i++){
-                if(bestMove == cards[i]){
-                    it = i;
-                    qDebug() << "it: " << it << ", i:" << i << "\n";
-                }
-            }
-
-            qDebug() << "----------------------------------\n";
-
-            mainWindow->cardSound();
-
-            if(bestMove[0] == 'J'){
-                jackKol++;
-
-                int sign[4];
-                sign[0] = 0;
-                sign[1] = 0;
-                sign[2] = 0;
-                sign[3] = 0;
-
-                for(int i = 0; i < cardsSize; i++){
-                    if(cards[i][0] != 'J'){
-                        if(cards[i][1] == 'c'){
-                            sign[0]++;
-                        }
-                        else if(cards[i][1] == 'k'){
-                            sign[1]++;
-                        }
-                        else if(cards[i][1] == 'b'){
-                            sign[2]++;
-                        }
-                        else if(cards[i][1] == 'p'){
-                            sign[3]++;
-                        }
+                if(cards[i][0] != 'J'){
+                    if(cards[i][1] == 'c'){
+                        sign[0]++;
+                    }
+                    else if(cards[i][1] == 'k'){
+                        sign[1]++;
+                    }
+                    else if(cards[i][1] == 'b'){
+                        sign[2]++;
+                    }
+                    else if(cards[i][1] == 'p'){
+                        sign[3]++;
                     }
                 }
-                int k = 0;
-                for(int i = 0; i < 4; i++){
-                    if(sign[k] < sign[i]){
-                        k = i;
-                    }
-                }
-                if(k == 0){
-                    mainWindow->setJackchoose("c");
-                    mainWindow->lable3Style("border-image: url(:/img/PNG-cards-1.3/chirva.png);");
-                }
-                else if(k == 1){
-                    mainWindow->setJackchoose("k");
-                    mainWindow->lable3Style("border-image: url(:/img/PNG-cards-1.3/kresti.png);");
-                }
-                else if(k == 2){
-                    mainWindow->setJackchoose("b");
-                    mainWindow->lable3Style("border-image: url(:/img/PNG-cards-1.3/bybna.png);");
-                }
-                else if(k == 3){
-                    mainWindow->setJackchoose("p");
-                    mainWindow->lable3Style("border-image: url(:/img/PNG-cards-1.3/piki.png);");
+            }
+            int k = 0;
+            for(int i = 0; i < 4; i++){
+                if(sign[k] < sign[i]){
+                    k = i;
                 }
             }
-            else{
-                jackKol = 0;
-                mainWindow->setJackchoose("");
-                mainWindow->hideLable3();
+            if(k == 0){
+                mainWindow->setJackchoose("c");
+                mainWindow->lable3Style("border-image: url(:/img/PNG-cards-1.3/chirva.png);");
             }
-
-            mainWindow->setTable(cards[it]);
-            const std::string* newtable = mainWindow->getTable();
-            const int newtableSize = mainWindow->getTableSize();
-            delete buttons[cardsSize - 1];
-            cards[it] = "";
-            for(int j = it; j < cardsSize - 1; j++){
-                cards[j] = cards[j + 1];
-                cards[j + 1] = "";
+            else if(k == 1){
+                mainWindow->setJackchoose("k");
+                mainWindow->lable3Style("border-image: url(:/img/PNG-cards-1.3/kresti.png);");
             }
-            cardsSize--;
-
-            if(mainWindow->isBridge())
-                mainWindow->setBridge(false);
-
-            if(cardsSize > 0 || newtable[newtableSize - 1][0] == '6'){
-                checkForTake = 0;
-                mv = mainWindow->isMove();
-                mainWindow->secondmove();
-                mainWindow->operation(mv);
+            else if(k == 2){
+                mainWindow->setJackchoose("b");
+                mainWindow->lable3Style("border-image: url(:/img/PNG-cards-1.3/bybna.png);");
             }
-            if(newtable[newtableSize - 1][0] != '6' && !mainWindow->isBridge()){
-                checkForEnd = true;
-                mainWindow->AutoSave();
-                mainWindow->gameEnd();
-            }
-        }
-        else if(bestMove == "click_end"){
-            mainWindow->endClicked();
-            mainWindow->setBridge(false);
-        }
-        else if(bestMove == "take"){
-            mainWindow->RemoveWidgetBot(0);
-            if(table[tableSize - 1][0] == '6'){
-                checkForTake = 0;
+            else if(k == 3){
+                mainWindow->setJackchoose("p");
+                mainWindow->lable3Style("border-image: url(:/img/PNG-cards-1.3/piki.png);");
             }
         }
         else{
+            jackKol = 0;
+            mainWindow->setJackchoose("");
+            mainWindow->hideLable3();
+        }
+
+        mainWindow->setTable(cards[it]);
+        const std::string* newtable = mainWindow->getTable();
+        const int newtableSize = mainWindow->getTableSize();
+        delete buttons[cardsSize - 1];
+        cards[it] = "";
+        for(int j = it; j < cardsSize - 1; j++){
+            cards[j] = cards[j + 1];
+            cards[j + 1] = "";
+        }
+        cardsSize--;
+
+        if(mainWindow->isBridge())
+            mainWindow->setBridge(false);
+
+        if(cardsSize > 0 || newtable[newtableSize - 1][0] == '6'){
+            checkForTake = 0;
+            mv = mainWindow->isMove();
+            mainWindow->secondmove();
+            mainWindow->operation(mv);
+        }
+        if(newtable[newtableSize - 1][0] != '6' && !mainWindow->isBridge()){
             checkForEnd = true;
-            mainWindow->AutoSave();
             mainWindow->gameEnd();
         }
     }
-    if(!checkForEnd){
+    else if(bestMove == "click_end"){
+        mainWindow->endClicked();
+        mainWindow->setBridge(false);
+    }
+    else if(bestMove == "take"){
+        mainWindow->RemoveWidgetBot();
+        if(table[tableSize - 1][0] == '6'){
+            checkForTake = 0;
+        }
+    }
+    else{
+        checkForEnd = true;
+        jackKol = 0;
+        mainWindow->gameEnd();
+    }
+
+    if (!checkForEnd) {
         mainWindow->AutoSave();
+        mainWindow->gameChange();
     }
 }

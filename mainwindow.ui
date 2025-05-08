@@ -72,7 +72,7 @@ background-color: rgb(163, 3, 47);
       <x>500</x>
       <y>160</y>
       <width>81</width>
-      <height>99</height>
+      <height>101</height>
      </rect>
     </property>
     <layout class="QHBoxLayout" name="horizontalLayout_3">
@@ -322,9 +322,9 @@ border-width: 2px;</string>
     <property name="geometry">
      <rect>
       <x>10</x>
-      <y>280</y>
+      <y>278</y>
       <width>91</width>
-      <height>16</height>
+      <height>18</height>
      </rect>
     </property>
     <property name="styleSheet">
@@ -348,7 +348,7 @@ border-width: 2px;</string>
       <x>10</x>
       <y>125</y>
       <width>151</width>
-      <height>16</height>
+      <height>18</height>
      </rect>
     </property>
     <property name="styleSheet">
@@ -1197,7 +1197,7 @@ color: orange</string>
       <x>260</x>
       <y>400</y>
       <width>151</width>
-      <height>16</height>
+      <height>18</height>
      </rect>
     </property>
     <property name="styleSheet">
@@ -1221,7 +1221,7 @@ color: orange</string>
       <x>400</x>
       <y>400</y>
       <width>151</width>
-      <height>16</height>
+      <height>18</height>
      </rect>
     </property>
     <property name="styleSheet">

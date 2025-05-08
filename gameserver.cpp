@@ -12,6 +12,7 @@ GameServer::~GameServer()
     for (auto& pair : clients) {
         QTcpSocket* socket = pair.first;
         if (socket) {
+            socket->disconnect();
             socket->disconnectFromHost();
             socket->close();
             socket->deleteLater();
@@ -24,7 +25,6 @@ GameServer::~GameServer()
         server->close();
     }
 }
-
 
 QString GameServer::startServer()
 {
@@ -45,10 +45,9 @@ QString GameServer::startServer()
 void GameServer::kickClient(QLabel *label)
 {
     for (const auto& pair : clients) {
-        if (pair.second == label) {
+        if (pair.second.first == label) {
             pair.first->write("You were kicked out.\n");
             pair.first->flush();
-            pair.first->disconnectFromHost();
             break;
         }
     }
@@ -57,32 +56,72 @@ void GameServer::kickClient(QLabel *label)
 void GameServer::swapClients(QLabel* first, QLabel* second)
 {
     auto itFirst = std::find_if(clients.begin(), clients.end(),
-                                [first](const std::pair<QTcpSocket*, QLabel*>& pair) {
-                                    return pair.second == first;
+                                [first](const std::pair<QTcpSocket*, std::pair<QLabel*, int>>& pair) {
+                                    return pair.second.first == first;
                                 });
 
     if (itFirst == clients.end())
         return;
 
     auto itSecond = std::find_if(clients.begin(), clients.end(),
-                                 [second](const std::pair<QTcpSocket*, QLabel*>& pair) {
-                                     return pair.second == second;
+                                 [second](const std::pair<QTcpSocket*, std::pair<QLabel*, int>>& pair) {
+                                     return pair.second.first == second;
                                  });
 
     if (itSecond != clients.end()) {
         std::swap(itFirst->second, itSecond->second);
     } else {
-        itFirst->second = second;
+        itFirst->second.first = second;
     }
 }
 
 void GameServer::HubChanged()
 {
     for (auto& pair : clients) {
-        QJsonDocument doc(mainWindow->hubJson(pair.second));
+        QJsonDocument doc(mainWindow->hubJson(pair.second.first));
         QString message = "HUB:" + QString::fromUtf8(doc.toJson(QJsonDocument::Compact)) + "\n";
 
         pair.first->write(message.toUtf8());
+    }
+}
+
+void GameServer::GameChanged()
+{
+    for (auto& pair : clients) {
+        QJsonDocument doc(mainWindow->gameJson(pair.second.second));
+        QString message = "GAME:" + QString::fromUtf8(doc.toJson(QJsonDocument::Compact)) + "\n";
+
+        pair.first->write(message.toUtf8());
+    }
+}
+
+void GameServer::setId(QLabel *label, int id)
+{
+    for (auto& client : clients) {
+        if (client.second.first == label) {
+            client.second.second = id;
+            return;
+        }
+    }
+}
+
+void GameServer::sendEndMessage(int index)
+{
+    for (const auto& pair : clients) {
+        QString msg = "GAMEOVER:" + mainWindow->endMessage(index, pair.second.second) + "\n";
+        pair.first->write(msg.toUtf8());
+    }
+}
+
+void GameServer::sendSetMessage(int index, const QString &massage)
+{
+    processingPaused = true;
+    for (const auto& pair : clients) {
+        if(pair.second.second == index){
+            QString msg = "SET:" + massage + "\n";
+            pair.first->write(msg.toUtf8());
+            break;
+        }
     }
 }
 
@@ -93,20 +132,24 @@ void GameServer::onNewConnection()
     if (slotsCounter == clients.size()) {
         clientSocket->write("No free slots.\n");
         clientSocket->flush();
-        clientSocket->disconnectFromHost();
         return;
     }
 
     connect(clientSocket, &QTcpSocket::readyRead, this, &GameServer::onReadyRead);
     connect(clientSocket, &QTcpSocket::disconnected, this, &GameServer::onClientDisconnected);
 
-    clients.push_back(std::pair(clientSocket, mainWindow->getLabel()));
+    clients.push_back(std::pair(clientSocket, std::pair(mainWindow->getLabel(), 0)));
     qDebug() << "New player joined. Total: " << clients.size();
 }
 
-void GameServer::onReadyRead() {
+void GameServer::onReadyRead() {    
     QTcpSocket* clientSocket = qobject_cast<QTcpSocket*>(sender());
     if (!clientSocket) return;
+
+    if (processingPaused) {
+        clientSocket->readAll();
+        return;
+    }
 
     QByteArray data = clientSocket->readAll();
     QString message = QString::fromUtf8(data).trimmed();
@@ -119,7 +162,7 @@ void GameServer::onReadyRead() {
 
         for (auto& pair : clients) {
             if (pair.first == clientSocket) {
-                pair.second->setText(name);
+                pair.second.first->setText(name);
                 break;
             }
         }
@@ -131,8 +174,59 @@ void GameServer::onReadyRead() {
 
         for (auto& pair : clients) {
             if (pair.first == clientSocket) {
-                qDebug() << "SWAP";
-                mainWindow->parseSwap(pair.second, button);
+                mainWindow->parseSwap(pair.second.first, button);
+                break;
+            }
+        }
+    }
+    else if(command == "CARD"){
+        QString card = parts.value(1, "0");
+
+        for (auto& pair : clients) {
+            if (pair.first == clientSocket) {
+                mainWindow->parseCard(pair.second.second, card.toStdString());
+                break;
+            }
+        }
+    }
+    else if(command == "COLOD"){
+        for (auto& pair : clients) {
+            if (pair.first == clientSocket) {
+                if(mainWindow->isMove() - 1 == pair.second.second){
+                    mainWindow->onRemoveWidgetColodBot();
+                    GameChanged();
+                }
+                break;
+            }
+        }
+    }
+    else if(command == "END"){
+        for (auto& pair : clients) {
+            if (pair.first == clientSocket) {
+                if(mainWindow->isMove() - 1 == pair.second.second){
+                    mainWindow->endClicked();
+                    mainWindow->setBridge(false);
+                    GameChanged();
+                }
+                break;
+            }
+        }
+    }
+    else if(command == "BRIDGE"){
+        for (auto& pair : clients) {
+            if (pair.first == clientSocket) {
+                mainWindow->parseBridge(pair.second.second);
+                break;
+            }
+        }
+    }
+    else if(command == "SUIT"){
+        QString suit = parts.value(1, "0");
+
+        for (auto& pair : clients) {
+            if (pair.first == clientSocket) {
+                mainWindow->parseSuit(pair.second.second, suit);
+                GameChanged();
                 break;
             }
         }
@@ -144,9 +238,11 @@ void GameServer::onClientDisconnected() {
     if (!clientSocket) return;
 
     QLabel* disconnectedLabel = nullptr;
+    int index = 0;
     for (const auto& pair : clients) {
         if (pair.first == clientSocket) {
-            disconnectedLabel = pair.second;
+            disconnectedLabel = pair.second.first;
+            index = pair.second.second;
             break;
         }
     }
@@ -155,14 +251,13 @@ void GameServer::onClientDisconnected() {
     if(disconnectedLabel){
         clients.erase(
             std::remove_if(clients.begin(), clients.end(),
-                           [clientSocket](const std::pair<QTcpSocket*, QLabel*>& pair) {
+                           [clientSocket](const std::pair<QTcpSocket*, std::pair<QLabel*, int>>& pair) {
                                return pair.first == clientSocket;
                            }),
             clients.end()
             );
         clientSocket->deleteLater();
 
-        mainWindow->ClientDisconnected(disconnectedLabel);
-        HubChanged();
+        mainWindow->ClientDisconnected(disconnectedLabel, index);
     }
 }
