@@ -485,6 +485,8 @@ void MainWindow::fromHostMessage(const QString &message, const QString &title)
                 ui->label_16->show();
                 ui->line->show();
                 ui->line_2->show();
+
+                Resizing();
             }
             if(client){
                 delete client;

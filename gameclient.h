@@ -30,6 +30,7 @@ public:
         }
         return false;
     }
+    void disconnect() { socket->disconnectFromHost(); }
 
 private slots:
     void onConnected();
